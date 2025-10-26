@@ -1,0 +1,170 @@
+{
+  "da": {
+    "welcome": {
+      "title": "Velkommen til {agentName}",
+      "subtitle": "Hvordan kan jeg hjælpe dig i dag? Du er velkommen til at spørge om hvad som helst!",
+      "getStarted": "Kom i gang",
+      "tip1": "Klik på 'Ny samtale' i sidepanelet for at starte en ny samtale",
+      "tip2": "Vælg en tidligere samtale fra listen for at fortsætte",
+      "tip3": "Brug søgefunktionen til at finde specifikke samtaler"
+    },
+    "input": {
+      "placeholder": "Skriv din besked...",
+      "placeholderConnecting": "Forbinder...",
+      "send": "Send"
+    },
+    "status": {
+      "connecting": "Forbinder til {agentName}...",
+      "connected": "Online",
+      "offline": "Offline",
+      "error": "Fejl ved forbindelse",
+      "processing": "Bearbejder...",
+      "thinking": "Tænker...",
+      "typing": "Skriver...",
+      "ready": "Klar",
+      "interpreting": "Læser..."
+    },
+    "agent": {
+      "defaultName": "AI Assistent",
+      "typing": "Skriver..."
+    },
+    "time": {
+      "now": "Nu",
+      "minutesAgo": "{minutes} min siden",
+      "hoursAgo": "{hours} timer siden",
+      "daysAgo": "{days} dage siden",
+      "yesterday": "I går",
+      "today": "I dag",
+      "yesterdayAt": "I går {time}",
+      "todayAt": "I dag {time}"
+    },
+    "sessions": {
+      "title": "Samtaler",
+      "newChat": "Ny samtale",
+      "search": "Søg i samtaler...",
+      "loading": "Indlæser...",
+      "retry": "Prøv igen",
+      "noResults": "Ingen samtaler fundet",
+      "noSessions": "Ingen samtaler endnu",
+      "confirmDelete": "Er du sikker på at du vil slette denne samtale?",
+      "delete": "Slet",
+      "refresh": "Opdater",
+      "defaultTitle": "Samtale"
+    },
+    "conversations": {
+      "title": "Samtaler"
+    },
+    "session": {
+      "defaultTitle": "Samtale",
+      "guest": "Gæst"
+    },
+    "settings": {
+      "title": "Indstillinger",
+      "agent": "Agent",
+      "customer": "Kunde",
+      "server": "Server",
+      "session": "Session ID",
+      "language": "Sprog",
+      "authentication": "Vælg bruger",
+      "authenticated": "Autentificeret"
+    },
+    "common": {
+      "close": "Luk",
+      "expand": "Udvid til fuld skærm",
+      "minimize": "Minimer"
+    },
+    "deleteModal": {
+      "title": "Slet samtale",
+      "subtitle": "Denne handling kan ikke fortrydes",
+      "confirmText": "Er du sikker på at du vil slette denne samtale?",
+      "warning": "Alle beskeder og historik vil blive permanent slettet.",
+      "cancel": "Annuller",
+      "delete": "Slet samtale",
+      "deleting": "Sletter..."
+    }
+  },
+  "en": {
+    "welcome": {
+      "title": "Welcome to {agentName}",
+      "subtitle": "How can I help you today? Feel free to ask me anything!",
+      "getStarted": "Get Started",
+      "tip1": "Click 'New chat' in the sidebar to start a new conversation",
+      "tip2": "Select a previous conversation from the list to continue",
+      "tip3": "Use the search function to find specific conversations"
+    },
+    "input": {
+      "placeholder": "Type your message...",
+      "placeholderConnecting": "Connecting...",
+      "send": "Send"
+    },
+    "status": {
+      "connecting": "Connecting to {agentName}...",
+      "connected": "Online",
+      "offline": "Offline",
+      "error": "Connection error",
+      "processing": "Processing...",
+      "thinking": "Thinking...",
+      "typing": "Typing...",
+      "ready": "Ready",
+      "interpreting": "Interpreting..."
+    },
+    "agent": {
+      "defaultName": "AI Assistant",
+      "typing": "Typing..."
+    },
+    "time": {
+      "now": "Now",
+      "minutesAgo": "{minutes} min ago",
+      "hoursAgo": "{hours} hours ago",
+      "daysAgo": "{days} days ago",
+      "yesterday": "Yesterday",
+      "today": "Today",
+      "yesterdayAt": "Yesterday {time}",
+      "todayAt": "Today {time}"
+    },
+    "sessions": {
+      "title": "Conversations",
+      "newChat": "New chat",
+      "search": "Search conversations...",
+      "loading": "Loading...",
+      "retry": "Try again",
+      "noResults": "No conversations found",
+      "noSessions": "No conversations yet",
+      "confirmDelete": "Are you sure you want to delete this conversation?",
+      "delete": "Delete",
+      "refresh": "Refresh",
+      "defaultTitle": "Conversation"
+    },
+    "conversations": {
+      "title": "Conversations"
+    },
+    "session": {
+      "defaultTitle": "Conversation",
+      "guest": "Guest"
+    },
+    "settings": {
+      "title": "Settings",
+      "agent": "Agent",
+      "customer": "Customer",
+      "server": "Server",
+      "session": "Session ID",
+      "language": "Language",
+      "authentication": "Select User",
+      "authenticated": "Authenticated"
+    },
+    "common": {
+      "close": "Close",
+      "expand": "Expand to full screen",
+      "minimize": "Minimize"
+    },
+    "deleteModal": {
+      "title": "Delete Conversation",
+      "subtitle": "This action cannot be undone",
+      "confirmText": "Are you sure you want to delete this conversation?",
+      "warning": "All messages and history will be permanently deleted.",
+      "cancel": "Cancel",
+      "delete": "Delete Conversation",
+      "deleting": "Deleting..."
+    }
+  }
+}
