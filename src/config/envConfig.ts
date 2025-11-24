@@ -78,12 +78,12 @@ export const getEnvConfig = (): EnvConfig => {
     return {
         serverUrl: env.VITE_SERVER_URL || 'http://localhost:8800',
         agentId: env.VITE_AGENT_ID || '',
-        agentName: env.VITE_AGENT_NAME || 'AI Assistant',
+        agentName: env.VITE_AGENT_NAME || 'Werktøj',
         language: (env.VITE_LANGUAGE as 'da' | 'en') || 'en',
         enableLogging: parseBoolean(env.VITE_ENABLE_LOGGING, false),
         initialMode: (env.VITE_INITIAL_MODE as 'minimized' | 'popup' | 'fullscreen') || 'popup',
         autoStartSession: parseBoolean(env.VITE_AUTO_START_SESSION, true),
-        showAttribution: parseBoolean(env.VITE_SHOW_ATTRIBUTION, true),
+        showAttribution: parseBoolean(env.VITE_SHOW_ATTRIBUTION, false),
         pollingConfig: getPollingConfig(),
     };
 };

@@ -44,7 +44,7 @@ interface ChatWindowProps {
   layoutMode?: 'popup' | 'fullscreen';
   /** Custom polling intervals for adaptive polling (optional) */
   pollingConfig?: PollingConfig;
-  /** Whether to show "Powered by Parlant" attribution (default: true) */
+  /** Whether to show "Powered by Parlant" attribution (default: false) */
   showAttribution?: boolean;
 }
 

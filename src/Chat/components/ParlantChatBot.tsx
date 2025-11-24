@@ -42,10 +42,12 @@ export interface ParlantChatBotProps {
   onClose?: () => void;
   /** Whether to enable automatic session creation on mount (default: true) */
   autoStartSession?: boolean;
-  /** Whether to show "Powered by Parlant" attribution (optional, default: true) */
+  /** Whether to show "Powered by Parlant" attribution (optional, default: false) */
   showAttribution?: boolean;
   /** Whether to enable console logging throughout the application (default: false) */
   enableLogging?: boolean;
+  /** Force minimize the chat (external control) */
+  forceMinimize?: boolean;
 }
 
 // Create a shared QueryClient instance
@@ -87,7 +89,8 @@ export const ParlantChatBot: React.FC<ParlantChatBotProps> = ({
   onClose,
   autoStartSession = true,
   showAttribution = true,
-  enableLogging = false
+  enableLogging = false,
+  forceMinimize = false
 }) => {
   // Configure logging based on prop
   useEffect(() => {
@@ -140,6 +143,14 @@ export const ParlantChatBot: React.FC<ParlantChatBotProps> = ({
   const [isFullScreen, setIsFullScreen] = useState<boolean>(initialMode === 'fullscreen');
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [sessionKey, setSessionKey] = useState<number>(0);
+
+  // Minimize chat when forceMinimize prop is true
+  useEffect(() => {
+    if (forceMinimize) {
+      setIsChatMinimized(true);
+      setIsFullScreen(false);
+    }
+  }, [forceMinimize]);
 
   // Clear session and messages when agent or customer changes
   useEffect(() => {
@@ -289,7 +300,7 @@ export const ParlantChatBot: React.FC<ParlantChatBotProps> = ({
         <div className="fixed bottom-4 right-4 z-50">
           <button
             onClick={handleRestoreChat}
-            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 animate-in slide-in-from-bottom-5"
+            className="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 animate-in slide-in-from-bottom-5"
             title="Restore Chat"
             aria-label="Restore Chat"
           >

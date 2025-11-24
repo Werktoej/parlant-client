@@ -3,7 +3,6 @@ import { Settings } from 'lucide-react'
 import { ParlantChatBot } from './Chat'
 import { ConfigurationModal } from './components/ConfigurationModal'
 import { ChatErrorBoundary } from './components/ErrorBoundary'
-import { getDefaultServerUrl } from './config/serverConfig'
 import { getEnvConfig, validateEnvConfig } from './config/envConfig'
 import { log, logError } from './Chat/utils/logger'
 
@@ -33,7 +32,7 @@ function App() {
   }, [])
 
   const [showSettings, setShowSettings] = useState<boolean>(true)
-  const [serverUrl, setServerUrl] = useState<string>(envConfig.serverUrl || getDefaultServerUrl())
+  const [serverUrl, setServerUrl] = useState<string>('http://localhost:8800')
   const [agentId, setAgentId] = useState<string>(envConfig.agentId || '')
   const [availableAgents, setAvailableAgents] = useState<Agent[]>([])
   const [isLoadingAgents, setIsLoadingAgents] = useState<boolean>(false)
@@ -189,7 +188,7 @@ function App() {
         {/* Hero Section */}
         <div className="text-center space-y-6 sm:space-y-8 max-w-4xl mx-auto px-2">
           <div className="space-y-2 sm:space-y-4">
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent leading-tight">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold bg-gradient-to-r from-primary-400 via-secondary-400 to-pink-400 bg-clip-text text-transparent leading-tight">
               {selectedAgent?.name || envConfig.agentName}
             </h1>
             <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light text-white/80">
@@ -255,6 +254,7 @@ function App() {
             enableLogging={envConfig.enableLogging}
             pollingConfig={envConfig.pollingConfig}
             showAttribution={envConfig.showAttribution}
+            forceMinimize={showSettings}
           />
         </ChatErrorBoundary>
       )}

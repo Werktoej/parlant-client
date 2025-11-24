@@ -68,7 +68,7 @@ interface FullScreenChatbotProps {
     onStartChat: () => void;
     isChatActive: boolean;
   };
-  /** Whether to show "Powered by Parlant" attribution (default: true) */
+  /** Whether to show "Powered by Parlant" attribution (default: false) */
   showAttribution?: boolean;
 }
 
@@ -263,7 +263,7 @@ export const FullScreenChatbot: React.FC<FullScreenChatbotProps> = ({
       )}
 
       {/* Right Side - Chat Interface */}
-      <div className="flex-1 flex flex-col bg-gradient-to-br from-slate-50 to-white min-w-0">
+      <div className="flex-1 flex flex-col bg-gradient-to-br from-background-secondary to-background-white min-w-0">
         {/* Chat Content using ChatWindow */}
         <div className="flex-1 overflow-hidden">
           <ChatWindow
@@ -290,7 +290,7 @@ export const FullScreenChatbot: React.FC<FullScreenChatbotProps> = ({
         </div>
 
         {/* Mobile Bottom Menu Bar - Only visible on mobile in fullscreen */}
-        <div className="md:hidden bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700 border-t border-purple-500/20" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+        <div className="md:hidden bg-gradient-to-r from-secondary-600 via-primary-600 to-secondary-700 border-t border-secondary-500/20" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
           <div className="flex items-center justify-around py-3 px-4">
             {/* Conversations Button */}
             <button

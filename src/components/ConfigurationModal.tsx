@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, RefreshCw, ChevronDown } from 'lucide-react';
 import { SERVER_CONFIG } from '../config/serverConfig';
 import { log } from '../Chat/utils/logger';
@@ -93,6 +93,38 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
   // Get selected agent details
   const selectedAgent = availableAgents.find(agent => agent.id === agentId);
 
+  // Combobox state for server URL
+  const [showServerDropdown, setShowServerDropdown] = useState(false);
+  const serverInputRef = useRef<HTMLInputElement>(null);
+  const serverDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        serverInputRef.current &&
+        serverDropdownRef.current &&
+        !serverInputRef.current.contains(event.target as Node) &&
+        !serverDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowServerDropdown(false);
+      }
+    };
+
+    if (showServerDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showServerDropdown]);
+
+  // Handle server URL selection from dropdown
+  const handleServerSelect = (url: string) => {
+    onServerUrlChange(url);
+    setShowServerDropdown(false);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -109,23 +141,58 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
         </div>
 
         <div className="space-y-4 sm:space-y-6">
-          {/* Server URL Dropdown */}
+          {/* Server URL Combobox */}
           <div>
             <label htmlFor="serverUrl" className="block text-sm font-medium text-gray-300 mb-2">
               Parlant Server
             </label>
-            <select
-              id="serverUrl"
-              value={serverUrl}
-              onChange={(e) => onServerUrlChange(e.target.value)}
-              className="w-full pl-3 sm:pl-4 pr-10 sm:pr-12 py-2 sm:py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 appearance-none cursor-pointer text-base bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724%27 height=%2724%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23ffffff%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27/%3e%3c/svg%3e')] bg-[length:20px] bg-[right_0.75rem_center] bg-no-repeat"
-            >
-              {Object.entries(SERVER_CONFIG).map(([url, config]) => (
-                <option key={url} value={url} className="bg-gray-800 text-white">
-                  {config.name} ({url})
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <input
+                ref={serverInputRef}
+                id="serverUrl"
+                type="text"
+                value={serverUrl}
+                onChange={(e) => onServerUrlChange(e.target.value)}
+                onFocus={() => setShowServerDropdown(true)}
+                onPaste={() => {
+                  // Allow paste to work normally, then show dropdown
+                  setTimeout(() => setShowServerDropdown(true), 0);
+                }}
+                className="w-full pl-3 sm:pl-4 pr-10 sm:pr-12 py-2 sm:py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
+                placeholder="Enter server URL or select from list..."
+              />
+              <button
+                type="button"
+                onClick={() => setShowServerDropdown(!showServerDropdown)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                aria-label="Toggle server list"
+              >
+                <ChevronDown
+                  size={20}
+                  className={`transition-transform duration-200 ${showServerDropdown ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {showServerDropdown && (
+                <div
+                  ref={serverDropdownRef}
+                  className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto"
+                >
+                  {Object.entries(SERVER_CONFIG).map(([url, config]) => (
+                    <button
+                      key={url}
+                      type="button"
+                      onClick={() => handleServerSelect(url)}
+                      className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-white hover:bg-gray-700 transition-colors ${
+                        serverUrl === url ? 'bg-blue-500/20' : ''
+                      }`}
+                    >
+                      <div className="font-medium">{config.name}</div>
+                      <div className="text-xs text-gray-400">{url}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Agent Selection */}
@@ -137,7 +204,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
               <button
                 onClick={onFetchAgents}
                 disabled={isLoadingAgents || !serverUrl.trim()}
-                className="text-blue-400 hover:text-blue-300 disabled:text-gray-500 transition-colors flex items-center space-x-1"
+                className="text-blue-400 hover:text-blue-300 disabled:text-gray-600 transition-colors flex items-center space-x-1"
                 title="Refresh agents"
               >
                 <RefreshCw size={16} className={isLoadingAgents ? 'animate-spin' : ''} />

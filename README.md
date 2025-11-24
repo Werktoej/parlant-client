@@ -809,6 +809,82 @@ The component will log warnings for:
 - Click to expand to popup or fullscreen
 - Useful for non-intrusive chat availability
 
+## Theme Customization
+
+The chatbot supports full theme customization through environment variables. All colors, fonts, and styling values can be overridden while maintaining the default styling as fallback.
+
+### Theme Configuration
+
+The theme system uses CSS variables that can be overridden via environment variables. Default values match the current styling.
+
+#### Available Theme Variables
+
+**Primary Colors:**
+- `VITE_THEME_PRIMARY_COLOR` - Primary color (e.g., `#3b82f6`)
+
+**Secondary Colors:**
+- `VITE_THEME_SECONDARY_COLOR` - Secondary color (e.g., `#a855f7`)
+
+**Accent Colors:**
+- `VITE_THEME_ACCENT_COLOR` - Accent color (e.g., `#22c55e`)
+
+**Background Colors:**
+- `VITE_THEME_BACKGROUND_PRIMARY` - Primary background color
+- `VITE_THEME_BACKGROUND_SECONDARY` - Secondary background color
+- `VITE_THEME_BACKGROUND_TERTIARY` - Tertiary background color
+- `VITE_THEME_BACKGROUND_WHITE` - White background color
+- `VITE_THEME_BACKGROUND_DARK` - Dark background color
+
+**Text Colors:**
+- `VITE_THEME_TEXT_PRIMARY` - Primary text color
+- `VITE_THEME_TEXT_SECONDARY` - Secondary text color
+- `VITE_THEME_TEXT_TERTIARY` - Tertiary text color
+- `VITE_THEME_TEXT_WHITE` - White text color
+- `VITE_THEME_TEXT_MUTED` - Muted text color
+
+**Typography:**
+- `VITE_THEME_FONT_FAMILY` - Font family (e.g., `'Inter, sans-serif'`)
+
+**Border Radius:**
+- `VITE_THEME_BORDER_RADIUS_LG` - Large border radius
+- `VITE_THEME_BORDER_RADIUS_XL` - Extra large border radius
+- `VITE_THEME_BORDER_RADIUS_2XL` - 2XL border radius
+- `VITE_THEME_BORDER_RADIUS_3XL` - 3XL border radius
+
+#### Example Theme Configuration
+
+Add to your `.env` file:
+
+```env
+# Theme Customization
+VITE_THEME_PRIMARY_COLOR=#0066cc
+VITE_THEME_SECONDARY_COLOR=#7c3aed
+VITE_THEME_ACCENT_COLOR=#10b981
+VITE_THEME_BACKGROUND_DARK=#0a0a0a
+VITE_THEME_TEXT_PRIMARY=#1a1a1a
+VITE_THEME_FONT_FAMILY='Inter, system-ui, sans-serif'
+```
+
+#### How It Works
+
+1. Theme configuration is loaded from `src/config/themeConfig.ts`
+2. Environment variables override default values
+3. CSS variables are injected into the document root via `ThemeProvider`
+4. Components use Tailwind classes that reference CSS variables
+5. All styling remains customizable without code changes
+
+#### Component Color Usage
+
+Components use theme colors as follows:
+
+- **Primary colors** (`primary-*`): Used for customer messages, buttons, links, and primary actions
+- **Secondary colors** (`secondary-*`): Used for gradients, headers, and secondary elements
+- **Accent colors** (`accent-*`): Used for success states, human agent messages, and highlights
+- **Error colors** (`error-*`): Used for error messages and warnings
+- **Success colors** (`success-*`): Used for success indicators
+
+All colors support the full Tailwind shade scale (50-900) and can be referenced in components using classes like `bg-primary-500`, `text-secondary-600`, etc.
+
 ## Environment Variables
 
 This project uses Vite environment variables for configuration. This is the **recommended approach** for production deployments.
@@ -843,6 +919,14 @@ VITE_SHOW_ATTRIBUTION=true
 # VITE_POLLING_VERY_IDLE=5000
 # VITE_POLLING_IDLE_THRESHOLD=10000
 # VITE_POLLING_VERY_IDLE_THRESHOLD=30000
+
+# Optional: Theme Customization
+# VITE_THEME_PRIMARY_COLOR=#3b82f6
+# VITE_THEME_SECONDARY_COLOR=#a855f7
+# VITE_THEME_ACCENT_COLOR=#22c55e
+# VITE_THEME_BACKGROUND_DARK=#0f172a
+# VITE_THEME_TEXT_PRIMARY=#1f2937
+# VITE_THEME_FONT_FAMILY='ui-sans-serif, system-ui'
 ```
 
 ### Using Environment Variables
