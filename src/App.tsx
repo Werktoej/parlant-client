@@ -41,6 +41,13 @@ function App() {
   const [customerId, setCustomerId] = useState<string>('')
   const [customerName, setCustomerName] = useState<string>('')
   const [isChatEnabled, setIsChatEnabled] = useState<boolean>(false)
+  const [welcomeMessages, setWelcomeMessages] = useState<Record<'da' | 'en', string>>({
+    da: 'Hej {customerName} - velkommen til {agentName}!\n\nHvordan kan jeg hjælpe dig i dag? Du er velkommen til at spørge om hvad som helst!',
+    en: 'Hello {customerName} - welcome to {agentName}!\n\nHow can I help you today? Feel free to ask me anything!'
+  })
+  const [language, setLanguage] = useState<'da' | 'en'>(envConfig.language || 'en')
+  const [initialMode, setInitialMode] = useState<'popup' | 'fullscreen' | 'minimized'>(envConfig.initialMode || 'popup')
+  const [autoStartSession, setAutoStartSession] = useState<boolean>(envConfig.autoStartSession ?? true)
 
   // JWT Tokens configuration
   const tokens = [
@@ -234,6 +241,14 @@ function App() {
         onStartChat={handleStartChat}
         showStartButton={true}
         isChatActive={isChatEnabled}
+        welcomeMessages={welcomeMessages}
+        onWelcomeMessagesChange={setWelcomeMessages}
+        language={language}
+        onLanguageChange={setLanguage}
+        initialMode={initialMode}
+        onInitialModeChange={setInitialMode}
+        autoStartSession={autoStartSession}
+        onAutoStartSessionChange={setAutoStartSession}
       />
 
       {/* ParlantChatBot Component with Error Boundary */}
@@ -246,15 +261,16 @@ function App() {
             authToken={selectedToken || undefined}
             customerId={customerId}
             customerName={customerName}
-            language={envConfig.language}
-            initialMode={envConfig.initialMode}
+            language={language}
+            initialMode={initialMode}
             onSessionCreated={handleSessionCreated}
             onClose={handleChatClose}
-            autoStartSession={envConfig.autoStartSession}
+            autoStartSession={autoStartSession}
             enableLogging={envConfig.enableLogging}
             pollingConfig={envConfig.pollingConfig}
             showAttribution={envConfig.showAttribution}
             forceMinimize={showSettings}
+            welcomeMessages={welcomeMessages}
           />
         </ChatErrorBoundary>
       )}

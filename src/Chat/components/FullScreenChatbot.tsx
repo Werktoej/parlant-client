@@ -70,6 +70,8 @@ interface FullScreenChatbotProps {
   };
   /** Whether to show "Powered by Parlant" attribution (default: false) */
   showAttribution?: boolean;
+  /** Welcome messages per language to send when creating a new session (optional) */
+  welcomeMessages?: Record<'da' | 'en', string>;
 }
 
 /**
@@ -93,7 +95,8 @@ export const FullScreenChatbot: React.FC<FullScreenChatbotProps> = ({
   onSessionUpdate,
   pollingConfig,
   configProps,
-  showAttribution = true
+  showAttribution = true,
+  welcomeMessages
 }) => {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(sessionId || null);
   const [showSettings, setShowSettings] = useState<boolean>(false);
@@ -286,6 +289,7 @@ export const FullScreenChatbot: React.FC<FullScreenChatbotProps> = ({
             layoutMode="fullscreen"
             pollingConfig={pollingConfig}
             showAttribution={showAttribution}
+            welcomeMessages={welcomeMessages}
           />
         </div>
 

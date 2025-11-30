@@ -80,6 +80,8 @@ interface ChatInterfaceProps {
   pollingConfig?: PollingConfig;
   /** Whether to show "Powered by Parlant" attribution (default: false) */
   showAttribution?: boolean;
+  /** Welcome messages per language to send when creating a new session (optional) */
+  welcomeMessages?: Record<'da' | 'en', string>;
 }
 
 /**
@@ -100,7 +102,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onSessionCreated,
   onWelcomeShown,
   pollingConfig,
-  showAttribution = true
+  showAttribution = true,
+  welcomeMessages
 }) => {
   const [sessionId, setSessionId] = useState<string | null>(externalSessionId || null);
   const [inputMessage, setInputMessage] = useState<string>('');
@@ -465,12 +468,34 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   useEffect(() => {
     if (!sessionId && !isCreatingSession && !sessionCreatedRef.current && !externalSessionId) {
       sessionCreatedRef.current = true;
-      createSession().catch(error => {
+      
+      // Get language-specific welcome message if provided
+      let initialMessageEvent: EventCreationParams | undefined;
+      if (welcomeMessages) {
+        const languageSpecificMessage = welcomeMessages[language];
+        if (languageSpecificMessage && languageSpecificMessage.trim()) {
+          // Replace placeholders with actual values
+          const messageWithReplacements = languageSpecificMessage
+            .replace(/\{customerName\}/g, customerName || '')
+            .replace(/\{agentName\}/g, agentName || displayAgentName)
+            .trim();
+          
+          if (messageWithReplacements) {
+            initialMessageEvent = {
+              kind: 'message',
+              message: messageWithReplacements,
+              source: 'customer',
+            };
+          }
+        }
+      }
+      
+      createSession(initialMessageEvent).catch(error => {
         logError('Failed to create session on mount:', error);
         sessionCreatedRef.current = false;
       });
     }
-  }, [externalSessionId, sessionId, isCreatingSession, createSession]);
+  }, [externalSessionId, sessionId, isCreatingSession, createSession, welcomeMessages, language, customerName, agentName, displayAgentName]);
 
   useEffect(() => {
     scrollToBottomIfNewMessages();
@@ -527,6 +552,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 onMessageAppear={handleWelcomeMessageAppear}
                 delay={1000}
                 skipAnimation={parentHasShownWelcome}
+                customWelcomeText={welcomeMessages?.[language]}
               />
             )}
 

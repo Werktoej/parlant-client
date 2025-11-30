@@ -53,6 +53,22 @@ interface ConfigurationModalProps {
   showStartButton?: boolean;
   /** Whether chat is currently active */
   isChatActive?: boolean;
+  /** Welcome messages per language */
+  welcomeMessages: Record<'da' | 'en', string>;
+  /** Function to update welcome messages */
+  onWelcomeMessagesChange: (messages: Record<'da' | 'en', string>) => void;
+  /** Current language setting */
+  language: 'da' | 'en';
+  /** Function to update language */
+  onLanguageChange: (language: 'da' | 'en') => void;
+  /** Current initial mode setting */
+  initialMode: 'popup' | 'fullscreen' | 'minimized';
+  /** Function to update initial mode */
+  onInitialModeChange: (mode: 'popup' | 'fullscreen' | 'minimized') => void;
+  /** Current auto start session setting */
+  autoStartSession: boolean;
+  /** Function to update auto start session */
+  onAutoStartSessionChange: (enabled: boolean) => void;
 }
 
 /**
@@ -72,7 +88,15 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
   agentError,
   onFetchAgents,
   onStartChat,
-  isChatActive = false
+  isChatActive = false,
+  welcomeMessages,
+  onWelcomeMessagesChange,
+  language,
+  onLanguageChange,
+  initialMode,
+  onInitialModeChange,
+  autoStartSession,
+  onAutoStartSessionChange
 }) => {
   // JWT Tokens configuration
   const tokens = [
@@ -97,6 +121,14 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
   const [showServerDropdown, setShowServerDropdown] = useState(false);
   const serverInputRef = useRef<HTMLInputElement>(null);
   const serverDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // State for which language tab is active in welcome message editor
+  const [editingWelcomeLanguage, setEditingWelcomeLanguage] = useState<'da' | 'en'>(language);
+  
+  // Update editing language when main language changes
+  useEffect(() => {
+    setEditingWelcomeLanguage(language);
+  }, [language]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -255,6 +287,126 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
                 <span>Loading agents from server...</span>
               </p>
             )}
+          </div>
+
+          {/* Welcome Message per Language */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Welcome Message
+            </label>
+            {/* Language Tabs */}
+            <div className="flex space-x-2 mb-3 border-b border-gray-600">
+              {(['da', 'en'] as const).map((lang) => (
+                <button
+                  key={lang}
+                  type="button"
+                  onClick={() => setEditingWelcomeLanguage(lang)}
+                  className={`px-3 py-2 text-sm font-medium transition-colors ${
+                    editingWelcomeLanguage === lang
+                      ? 'text-blue-400 border-b-2 border-blue-400'
+                      : 'text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  {lang === 'da' ? 'Dansk' : 'English'}
+                </button>
+              ))}
+            </div>
+            {/* Message Input for Selected Language */}
+            <textarea
+              id="welcomeMessage"
+              value={welcomeMessages[editingWelcomeLanguage]}
+              onChange={(e) => {
+                onWelcomeMessagesChange({
+                  ...welcomeMessages,
+                  [editingWelcomeLanguage]: e.target.value
+                });
+              }}
+              rows={4}
+              className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base resize-y"
+              placeholder={`Enter welcome message for ${editingWelcomeLanguage === 'da' ? 'Danish' : 'English'}...`}
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Use {'{customerName}'} and {'{agentName}'} as placeholders. This message will be sent automatically when starting a new chat session.
+            </p>
+          </div>
+
+          {/* Language Selection */}
+          <div>
+            <label htmlFor="language" className="block text-sm font-medium text-gray-300 mb-2">
+              Language
+            </label>
+            <div className="relative">
+              <select
+                id="language"
+                value={language}
+                onChange={(e) => onLanguageChange(e.target.value as 'da' | 'en')}
+                className="w-full pl-3 sm:pl-4 pr-10 sm:pr-12 py-2 sm:py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base appearance-none cursor-pointer"
+              >
+                <option value="en">English</option>
+                <option value="da">Dansk</option>
+              </select>
+              <ChevronDown
+                size={20}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+              />
+            </div>
+          </div>
+
+          {/* Initial Mode Selection */}
+          <div>
+            <label htmlFor="initialMode" className="block text-sm font-medium text-gray-300 mb-2">
+              Initial Display Mode
+            </label>
+            <div className="relative">
+              <select
+                id="initialMode"
+                value={initialMode}
+                onChange={(e) => onInitialModeChange(e.target.value as 'popup' | 'fullscreen' | 'minimized')}
+                className="w-full pl-3 sm:pl-4 pr-10 sm:pr-12 py-2 sm:py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base appearance-none cursor-pointer"
+              >
+                <option value="popup">Popup</option>
+                <option value="fullscreen">Fullscreen</option>
+                <option value="minimized">Minimized</option>
+              </select>
+              <ChevronDown
+                size={20}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              How the chat window appears when first opened
+            </p>
+          </div>
+
+          {/* Auto Start Session Toggle */}
+          <div>
+            <label className="flex items-center justify-between cursor-pointer">
+              <div>
+                <span className="block text-sm font-medium text-gray-300">Auto Start Session</span>
+                <span className="text-xs text-gray-400">Automatically create a session when chat opens</span>
+              </div>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={autoStartSession}
+                  onChange={(e) => onAutoStartSessionChange(e.target.checked)}
+                  className="sr-only"
+                />
+                <div
+                  className={`w-11 h-6 rounded-full transition-colors duration-200 ${
+                    autoStartSession ? 'bg-blue-500' : 'bg-gray-600'
+                  }`}
+                  onClick={() => onAutoStartSessionChange(!autoStartSession)}
+                >
+                  <div
+                    className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                      autoStartSession ? 'translate-x-5' : 'translate-x-0.5'
+                    }`}
+                    style={{ marginTop: '2px' }}
+                  />
+                </div>
+              </div>
+            </label>
           </div>
 
           {/* Token Selection */}

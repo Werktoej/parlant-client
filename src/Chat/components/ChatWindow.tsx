@@ -46,6 +46,8 @@ interface ChatWindowProps {
   pollingConfig?: PollingConfig;
   /** Whether to show "Powered by Parlant" attribution (default: false) */
   showAttribution?: boolean;
+  /** Welcome messages per language to send when creating a new session (optional) */
+  welcomeMessages?: Record<'da' | 'en', string>;
 }
 
 /**
@@ -71,7 +73,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onToggleSessions,
   layoutMode = 'popup',
   pollingConfig,
-  showAttribution = true
+  showAttribution = true,
+  welcomeMessages
 }) => {
   const { t } = useTranslation(language);
 
@@ -171,6 +174,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           onWelcomeShown={onWelcomeShown}
           pollingConfig={pollingConfig}
           showAttribution={showAttribution}
+          welcomeMessages={welcomeMessages}
         />
       </div>
     </div>

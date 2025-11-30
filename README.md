@@ -114,21 +114,21 @@ export default {
 
 ### Optional Props
 
-| Prop               | Type                                                                                     | Default     | Description                                                                               |
-| ------------------ | ---------------------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------- |
+| Prop               | Type                                                                                     | Default      | Description                                                                               |
+| ------------------ | ---------------------------------------------------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------- |
 | `agentName`        | `string`                                                                                 | `'My Agent'` | Display name for the agent                                                                |
-| `authToken`        | `string`                                                                                 | -           | JWT token for authentication (recommended). Customer info will be extracted automatically |
-| `authProvider`     | `'microsoft' \| 'keycloak' \| 'auth0' \| 'okta' \| 'google' \| 'wordpress' \| 'generic'` | `'generic'` | Auth provider type for automatic JWT claim mapping                                        |
-| `customerId`       | `string`                                                                                 | `'guest'`   | Customer ID (only used when no authToken provided)                                        |
-| `customerName`     | `string`                                                                                 | -           | Customer name for personalization (overrides JWT-derived value)                           |
-| `language`         | `'da' \| 'en'`                                                                           | `'da'`      | Interface language                                                                        |
-| `initialMode`      | `'popup' \| 'fullscreen' \| 'minimized'`                                                 | `'popup'`   | Initial display mode                                                                      |
-| `pollingConfig`    | `PollingConfig`                                                                          | -           | Custom polling intervals (see below)                                                      |
-| `onSessionCreated` | `(sessionId: string) => void`                                                            | -           | Callback when a session is created                                                        |
-| `onClose`          | `() => void`                                                                             | -           | Callback when chat is closed/minimized                                                    |
-| `autoStartSession` | `boolean`                                                                                | `true`      | Whether to automatically create a session on mount                                        |
-| `showAttribution`  | `boolean`                                                                                | `true`      | Whether to show "Powered by Parlant" attribution                                          |
-| `enableLogging`    | `boolean`                                                                                | `false`     | Whether to enable console logging throughout the application                              |
+| `authToken`        | `string`                                                                                 | -            | JWT token for authentication (recommended). Customer info will be extracted automatically |
+| `authProvider`     | `'microsoft' \| 'keycloak' \| 'auth0' \| 'okta' \| 'google' \| 'wordpress' \| 'generic'` | `'generic'`  | Auth provider type for automatic JWT claim mapping                                        |
+| `customerId`       | `string`                                                                                 | `'guest'`    | Customer ID (only used when no authToken provided)                                        |
+| `customerName`     | `string`                                                                                 | -            | Customer name for personalization (overrides JWT-derived value)                           |
+| `language`         | `'da' \| 'en'`                                                                           | `'da'`       | Interface language                                                                        |
+| `initialMode`      | `'popup' \| 'fullscreen' \| 'minimized'`                                                 | `'popup'`    | Initial display mode                                                                      |
+| `pollingConfig`    | `PollingConfig`                                                                          | -            | Custom polling intervals (see below)                                                      |
+| `onSessionCreated` | `(sessionId: string) => void`                                                            | -            | Callback when a session is created                                                        |
+| `onClose`          | `() => void`                                                                             | -            | Callback when chat is closed/minimized                                                    |
+| `autoStartSession` | `boolean`                                                                                | `true`       | Whether to automatically create a session on mount                                        |
+| `showAttribution`  | `boolean`                                                                                | `true`       | Whether to show "Powered by Parlant" attribution                                          |
+| `enableLogging`    | `boolean`                                                                                | `false`      | Whether to enable console logging throughout the application                              |
 
 ### PollingConfig
 
@@ -820,15 +820,19 @@ The theme system uses CSS variables that can be overridden via environment varia
 #### Available Theme Variables
 
 **Primary Colors:**
+
 - `VITE_THEME_PRIMARY_COLOR` - Primary color (e.g., `#3b82f6`)
 
 **Secondary Colors:**
+
 - `VITE_THEME_SECONDARY_COLOR` - Secondary color (e.g., `#a855f7`)
 
 **Accent Colors:**
+
 - `VITE_THEME_ACCENT_COLOR` - Accent color (e.g., `#22c55e`)
 
 **Background Colors:**
+
 - `VITE_THEME_BACKGROUND_PRIMARY` - Primary background color
 - `VITE_THEME_BACKGROUND_SECONDARY` - Secondary background color
 - `VITE_THEME_BACKGROUND_TERTIARY` - Tertiary background color
@@ -836,6 +840,7 @@ The theme system uses CSS variables that can be overridden via environment varia
 - `VITE_THEME_BACKGROUND_DARK` - Dark background color
 
 **Text Colors:**
+
 - `VITE_THEME_TEXT_PRIMARY` - Primary text color
 - `VITE_THEME_TEXT_SECONDARY` - Secondary text color
 - `VITE_THEME_TEXT_TERTIARY` - Tertiary text color
@@ -843,9 +848,11 @@ The theme system uses CSS variables that can be overridden via environment varia
 - `VITE_THEME_TEXT_MUTED` - Muted text color
 
 **Typography:**
+
 - `VITE_THEME_FONT_FAMILY` - Font family (e.g., `'Inter, sans-serif'`)
 
 **Border Radius:**
+
 - `VITE_THEME_BORDER_RADIUS_LG` - Large border radius
 - `VITE_THEME_BORDER_RADIUS_XL` - Extra large border radius
 - `VITE_THEME_BORDER_RADIUS_2XL` - 2XL border radius

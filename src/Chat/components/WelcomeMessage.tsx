@@ -17,6 +17,8 @@ interface WelcomeMessageProps {
   delay?: number;
   /** Whether to skip the typing animation (for already shown welcomes) */
   skipAnimation?: boolean;
+  /** Custom welcome text template with placeholders {customerName} and {agentName} */
+  customWelcomeText?: string;
 }
 
 /**
@@ -29,7 +31,8 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({
   language = 'en',
   onMessageAppear,
   delay = 1000,
-  skipAnimation = false
+  skipAnimation = false,
+  customWelcomeText
 }) => {
   const [isTyping, setIsTyping] = useState<boolean>(!skipAnimation);
   const [showMessage, setShowMessage] = useState<boolean>(skipAnimation);
@@ -64,9 +67,24 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({
     }
   }, [delay, onMessageAppear, skipAnimation]);
 
-  const welcomeText = customerName
-    ? `Hej ${customerName} - velkommen til ${agentName}!\n\n${t('welcome.subtitle')}`
-    : `${t('welcome.title', { agentName })}!\n\n${t('welcome.subtitle')}`;
+  /**
+   * Generates the welcome text, replacing placeholders in custom template or using default
+   */
+  const getWelcomeText = (): string => {
+    // If custom welcome text is provided, replace placeholders
+    if (customWelcomeText) {
+      return customWelcomeText
+        .replace(/\{customerName\}/g, customerName || '')
+        .replace(/\{agentName\}/g, agentName);
+    }
+    
+    // Otherwise use default behavior
+    return customerName
+      ? `Hej ${customerName} - velkommen til ${agentName}!\n\n${t('welcome.subtitle')}`
+      : `${t('welcome.title', { agentName })}!\n\n${t('welcome.subtitle')}`;
+  };
+
+  const welcomeText = getWelcomeText();
 
   if (isTyping) {
     // Typing indicator that looks like a regular message

@@ -48,6 +48,8 @@ export interface ParlantChatBotProps {
   enableLogging?: boolean;
   /** Force minimize the chat (external control) */
   forceMinimize?: boolean;
+  /** Welcome messages per language to send when creating a new session (optional) */
+  welcomeMessages?: Record<'da' | 'en', string>;
 }
 
 // Create a shared QueryClient instance
@@ -90,7 +92,8 @@ export const ParlantChatBot: React.FC<ParlantChatBotProps> = ({
   autoStartSession = true,
   showAttribution = true,
   enableLogging = false,
-  forceMinimize = false
+  forceMinimize = false,
+  welcomeMessages
 }) => {
   // Configure logging based on prop
   useEffect(() => {
@@ -255,6 +258,7 @@ export const ParlantChatBot: React.FC<ParlantChatBotProps> = ({
             onExpand={handleExpand}
             pollingConfig={pollingConfig}
             showAttribution={showAttribution}
+            welcomeMessages={welcomeMessages}
           />
         </div>
       )}
@@ -279,6 +283,7 @@ export const ParlantChatBot: React.FC<ParlantChatBotProps> = ({
           onSessionUpdate={handleSessionUpdate}
           pollingConfig={pollingConfig}
           showAttribution={showAttribution}
+          welcomeMessages={welcomeMessages}
           configProps={{
             selectedToken: authToken || null,
             availableAgents: [],
