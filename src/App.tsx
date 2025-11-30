@@ -195,7 +195,7 @@ function App() {
         {/* Hero Section */}
         <div className="text-center space-y-6 sm:space-y-8 max-w-4xl mx-auto px-2">
           <div className="space-y-2 sm:space-y-4">
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold bg-gradient-to-r from-primary-400 via-secondary-400 to-pink-400 bg-clip-text text-transparent leading-tight">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white leading-tight">
               {selectedAgent?.name || envConfig.agentName}
             </h1>
             <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light text-white/80">

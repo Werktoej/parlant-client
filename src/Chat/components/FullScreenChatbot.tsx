@@ -67,6 +67,14 @@ interface FullScreenChatbotProps {
     onFetchAgents: () => void;
     onStartChat: () => void;
     isChatActive: boolean;
+    welcomeMessages: Record<'da' | 'en', string>;
+    onWelcomeMessagesChange: (messages: Record<'da' | 'en', string>) => void;
+    language: 'da' | 'en';
+    onLanguageChange: (language: 'da' | 'en') => void;
+    initialMode: 'popup' | 'fullscreen' | 'minimized';
+    onInitialModeChange: (mode: 'popup' | 'fullscreen' | 'minimized') => void;
+    autoStartSession: boolean;
+    onAutoStartSessionChange: (enabled: boolean) => void;
   };
   /** Whether to show "Powered by Parlant" attribution (default: false) */
   showAttribution?: boolean;
@@ -348,6 +356,14 @@ export const FullScreenChatbot: React.FC<FullScreenChatbotProps> = ({
         onStartChat={handleApplyConfigAndClose}
         showStartButton={true}
         isChatActive={configProps.isChatActive}
+        welcomeMessages={configProps.welcomeMessages}
+        onWelcomeMessagesChange={configProps.onWelcomeMessagesChange}
+        language={configProps.language}
+        onLanguageChange={configProps.onLanguageChange}
+        initialMode={configProps.initialMode}
+        onInitialModeChange={configProps.onInitialModeChange}
+        autoStartSession={configProps.autoStartSession}
+        onAutoStartSessionChange={configProps.onAutoStartSessionChange}
       />
 
     </div>

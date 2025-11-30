@@ -225,6 +225,13 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
                 </div>
               )}
             </div>
+            
+            {/* Error Message */}
+            {agentError && (
+              <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                <p className="text-red-300 text-sm">{agentError}</p>
+              </div>
+            )}
           </div>
 
           {/* Agent Selection */}
@@ -235,7 +242,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
               </label>
               <button
                 onClick={onFetchAgents}
-                disabled={isLoadingAgents || !serverUrl.trim()}
+                disabled={isLoadingAgents || !serverUrl.trim() || !!agentError}
                 className="text-blue-400 hover:text-blue-300 disabled:text-gray-600 transition-colors flex items-center space-x-1"
                 title="Refresh agents"
               >
@@ -244,42 +251,42 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
               </button>
             </div>
 
-            {agentError && (
-              <div className="mb-3 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
-                <p className="text-red-300 text-sm">{agentError}</p>
-              </div>
-            )}
-
-            {availableAgents.length > 0 ? (
-              <div className="relative">
-                <select
-                  id="agentId"
-                  value={agentId}
-                  onChange={(e) => onAgentIdChange(e.target.value)}
-                  className="w-full pl-3 sm:pl-4 pr-10 sm:pr-12 py-2 sm:py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base appearance-none cursor-pointer"
-                >
-                  <option value="">Select an agent...</option>
-                  {availableAgents.map((agent) => (
-                    <option key={agent.id} value={agent.id}>
-                      {agent.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={20}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                />
-              </div>
-            ) : (
-              <input
+            <div className="relative">
+              <select
                 id="agentId"
-                type="text"
                 value={agentId}
                 onChange={(e) => onAgentIdChange(e.target.value)}
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
-                placeholder="Enter agent ID manually..."
+                disabled={!!agentError || isLoadingAgents || availableAgents.length === 0}
+                className={`w-full pl-3 sm:pl-4 pr-10 sm:pr-12 py-2 sm:py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base appearance-none ${
+                  agentError || isLoadingAgents || availableAgents.length === 0
+                    ? 'cursor-not-allowed opacity-50'
+                    : 'cursor-pointer'
+                }`}
+              >
+                <option value="">
+                  {agentError
+                    ? 'Unable to load agents'
+                    : isLoadingAgents
+                    ? 'Loading agents...'
+                    : availableAgents.length === 0
+                    ? 'No agents available'
+                    : 'Select an agent...'}
+                </option>
+                {availableAgents.map((agent) => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                size={20}
+                className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${
+                  agentError || isLoadingAgents || availableAgents.length === 0
+                    ? 'text-gray-600'
+                    : 'text-gray-400'
+                }`}
               />
-            )}
+            </div>
 
             {isLoadingAgents && (
               <p className="text-xs text-gray-400 mt-1 flex items-center space-x-1">
@@ -463,12 +470,13 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
                   serverUrl: serverUrl.trim(),
                   agentId: agentId.trim(),
                   selectedToken,
-                  buttonDisabled: !serverUrl.trim() || !agentId.trim() || !selectedToken,
+                  agentError,
+                  buttonDisabled: !serverUrl.trim() || !agentId.trim() || !selectedToken || !!agentError,
                   onStartChatType: typeof onStartChat
                 });
                 onStartChat();
               }}
-              disabled={!serverUrl.trim() || !agentId.trim() || !selectedToken}
+              disabled={!serverUrl.trim() || !agentId.trim() || !selectedToken || !!agentError}
               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:hover:scale-100 shadow-lg hover:shadow-xl text-base"
             >
               {isChatActive ? 'Apply Changes' : 'Start Chat'}

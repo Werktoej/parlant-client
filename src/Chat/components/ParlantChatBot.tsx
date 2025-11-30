@@ -296,6 +296,14 @@ export const ParlantChatBot: React.FC<ParlantChatBotProps> = ({
             onFetchAgents: () => { },
             onStartChat: () => { },
             isChatActive: isChatEnabled,
+            welcomeMessages: welcomeMessages || { da: '', en: '' },
+            onWelcomeMessagesChange: () => { },
+            language: language || 'en',
+            onLanguageChange: () => { },
+            initialMode: initialMode || 'popup',
+            onInitialModeChange: () => { },
+            autoStartSession: autoStartSession ?? true,
+            onAutoStartSessionChange: () => { },
           }}
         />
       )}
