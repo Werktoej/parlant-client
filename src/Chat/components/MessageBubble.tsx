@@ -9,6 +9,8 @@
 
 import React from 'react';
 import type { MessageInterface } from '../hooks/useMessageProcessing';
+import { MessageContent } from './MessageContent';
+import type { ButtonVariant } from '../../lib/theme/types';
 
 /**
  * Props for MessageBubble component
@@ -22,6 +24,8 @@ interface MessageBubbleProps {
   timestamp: string;
   /** Whether this is a status/typing message */
   isStatusMessage?: boolean;
+  /** Optional callback when a button in the message is clicked */
+  onButtonClick?: (url: string, label: string, variant?: ButtonVariant) => void;
 }
 
 /**
@@ -63,7 +67,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
   displayName,
   timestamp,
-  isStatusMessage = false
+  isStatusMessage = false,
+  onButtonClick
 }) => {
   const isCustomer = message.source === 'customer';
   const isHumanAgent = message.source === 'human_agent';
@@ -133,7 +138,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               <span className="opacity-80 font-medium">{messageText}</span>
             </div>
           ) : (
-            messageText
+            <MessageContent
+              content={messageText}
+              isCustomerMessage={isCustomer}
+              onButtonClick={onButtonClick}
+            />
           )}
         </div>
       </div>
