@@ -469,33 +469,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (!sessionId && !isCreatingSession && !sessionCreatedRef.current && !externalSessionId) {
       sessionCreatedRef.current = true;
       
-      // Get language-specific welcome message if provided
-      let initialMessageEvent: EventCreationParams | undefined;
-      if (welcomeMessages) {
-        const languageSpecificMessage = welcomeMessages[language];
-        if (languageSpecificMessage && languageSpecificMessage.trim()) {
-          // Replace placeholders with actual values
-          const messageWithReplacements = languageSpecificMessage
-            .replace(/\{customerName\}/g, customerName || '')
-            .replace(/\{agentName\}/g, agentName || displayAgentName)
-            .trim();
-          
-          if (messageWithReplacements) {
-            initialMessageEvent = {
-              kind: 'message',
-              message: messageWithReplacements,
-              source: 'customer',
-            };
-          }
-        }
-      }
-      
-      createSession(initialMessageEvent).catch(error => {
+      // Create session without sending an initial message
+      // The welcome message is displayed locally via WelcomeMessage component
+      // and should NOT be submitted to the backend
+      createSession().catch(error => {
         logError('Failed to create session on mount:', error);
         sessionCreatedRef.current = false;
       });
     }
-  }, [externalSessionId, sessionId, isCreatingSession, createSession, welcomeMessages, language, customerName, agentName, displayAgentName]);
+  }, [externalSessionId, sessionId, isCreatingSession, createSession]);
 
   useEffect(() => {
     scrollToBottomIfNewMessages();
@@ -515,13 +497,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     <div className="flex flex-col h-full">
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border-b border-red-100 px-3 sm:px-6 py-2 sm:py-3">
+        <div className="bg-destructive text-destructive-foreground border-b border-destructive px-3 sm:px-6 py-2 sm:py-3">
           <div className="flex items-center space-x-2">
-            <AlertCircle size={14} className="sm:w-4 sm:h-4 text-red-600 flex-shrink-0" />
-            <span className="text-red-700 text-xs sm:text-sm truncate">{error}</span>
+            <AlertCircle size={14} className="sm:w-4 sm:h-4 text-destructive flex-shrink-0" />
+            <span className="text-destructive text-xs sm:text-sm truncate">{error}</span>
             <button
               onClick={() => setError('')}
-              className="ml-auto text-red-600 hover:text-red-800 flex-shrink-0"
+              className="ml-auto text-destructive-foreground hover:text-destructive-foreground flex-shrink-0"
             >
               ×
             </button>
@@ -532,13 +514,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Messages Area */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 bg-gradient-to-b from-gray-50/50 to-white scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+        className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 bg-background scrollbar-thin scrollbar-thumb-muted scrollbar-track-background"
       >
         {isCreatingSession ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center space-y-4">
-              <Loader2 size={32} className="animate-spin text-blue-600 mx-auto" />
-              <p className="text-gray-600">{t('status.connecting', { agentName: displayAgentName })}</p>
+              <Loader2 size={32} className="animate-spin text-primary mx-auto" />
+              <p className="text-muted-foreground">{t('status.connecting', { agentName: displayAgentName })}</p>
             </div>
           </div>
         ) : (
@@ -571,23 +553,23 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   className={`flex ${message.source === 'customer' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[90%] sm:max-w-[80%] rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-5 shadow-lg ${message.source === 'customer'
+                    className={`max-w-[90%] sm:max-w-[80%] rounded-lg sm:rounded-lg p-3 sm:p-4 lg:p-5 shadow-lg ${message.source === 'customer'
                       ? (message.serverStatus === 'pending'
-                        ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white rounded-br-lg opacity-75'
-                        : 'bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-lg')
+                        ? 'bg-muted text-muted-foreground rounded-br-lg border-[0.5px] border-primary/50'
+                        : 'bg-primary text-primary-foreground rounded-br-lg')
                       : message.source === 'human_agent'
-                        ? 'bg-gradient-to-br from-green-500 to-green-600 text-white rounded-bl-lg'
-                        : 'bg-white border border-gray-200 text-gray-800 rounded-bl-lg'
+                        ? 'bg-accent text-accent-foreground rounded-bl-lg'
+                        : 'bg-card border-[0.5px] border-border/50 text-card-foreground rounded-bl-lg'
                       }`}
                   >
                     {/* Message Header for non-customer messages */}
                     {message.source !== 'customer' && (
                       <div className="flex items-center justify-between mb-1 sm:mb-2">
-                        <span className={`text-xs font-medium pr-2 sm:pr-4 truncate ${message.source === 'human_agent' ? 'text-green-100' : 'text-gray-500'
+                        <span className={`text-xs font-medium pr-2 sm:pr-4 truncate ${message.source === 'human_agent' ? 'text-accent-foreground' : 'text-muted-foreground'
                           }`}>
                           {getSourceDisplayName(message.source, (message.data as MessageData)?.participant?.display_name)}
                         </span>
-                        <span className={`text-xs flex-shrink-0 ${message.source === 'human_agent' ? 'text-green-200' : 'text-gray-400'
+                        <span className={`text-xs flex-shrink-0 ${message.source === 'human_agent' ? 'text-accent-foreground/70' : 'text-muted-foreground'
                           }`}>
                           {formatTimestamp(new Date(message.created_at || message.creationUtc || Date.now()))}
                         </span>
@@ -599,11 +581,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       {message.isStatusMessage ? (
                         <div className="flex items-center space-x-3">
                           <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                           </div>
-                          <span className="text-gray-600 font-medium">
+                          <span className="text-muted-foreground font-medium">
                             {(message.data as MessageData)?.message || ''}
                           </span>
                         </div>
@@ -614,15 +596,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
                     {/* Timestamp for customer messages */}
                     {message.source === 'customer' && (
-                      <div className="text-xs text-blue-200 mt-1 sm:mt-2 text-right flex items-center justify-end space-x-1">
+                      <div className="text-xs text-primary-foreground/70 mt-1 sm:mt-2 text-right flex items-center justify-end space-x-1">
                         <span>
                           {formatTimestamp(new Date(message.created_at || message.creationUtc || Date.now()))}
                         </span>
                         {message.serverStatus === 'pending' && (
                           <div className="flex space-x-1">
-                            <div className="w-1 h-1 bg-blue-200 rounded-full animate-pulse"></div>
-                            <div className="w-1 h-1 bg-blue-200 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
-                            <div className="w-1 h-1 bg-blue-200 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                            <div className="w-1 h-1 bg-primary-foreground rounded-full animate-pulse"></div>
+                            <div className="w-1 h-1 bg-primary-foreground rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-1 h-1 bg-primary-foreground rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
                           </div>
                         )}
                       </div>
@@ -638,29 +620,27 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
 
       {/* Input Area */}
-      <div className="bg-white/80 backdrop-blur-sm border-t border-gray-200 p-2 sm:p-3 lg:p-4 m-1 sm:m-2 rounded-xl sm:rounded-2xl">
+      <div className="bg-card border-t border-border p-2 sm:p-3 m-1 sm:m-2 rounded-md">
         <div className="flex items-center space-x-2 sm:space-x-3">
-          <div className="flex-1">
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={sessionId ? t('input.placeholder') : t('input.placeholderConnecting')}
-              disabled={!sessionId || isCreatingSession}
-              className="w-full bg-white border-2 border-gray-200 focus:border-blue-500 text-gray-800 placeholder-gray-400 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-base resize-none transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-          </div>
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder={sessionId ? t('input.placeholder') : t('input.placeholderConnecting')}
+            disabled={!sessionId || isCreatingSession}
+            className="flex-1 h-12 bg-background border border-input focus:border-ring text-foreground placeholder-muted-foreground rounded-md px-4 text-sm transition-all duration-200 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
+          />
           <button
             onClick={sendMessage}
             disabled={!inputMessage.trim() || !sessionId || isCreatingSession}
-            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white rounded-xl sm:rounded-2xl p-3 sm:p-4 transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none flex-shrink-0"
+            className="w-12 h-12 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground rounded-md transition-all duration-200 flex items-center justify-center flex-shrink-0"
           >
             {showInfo ? (
-              <Loader2 size={18} className="sm:w-5 sm:h-5 animate-spin" />
+              <Loader2 size={20} className="animate-spin" />
             ) : (
-              <Send size={18} className="sm:w-5 sm:h-5" />
+              <Send size={20} />
             )}
           </button>
         </div>
@@ -672,7 +652,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               href="https://www.parlant.io/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200 flex items-center space-x-1"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 flex items-center space-x-1"
             >
               <span>Powered by</span>
               <span className="font-semibold">Parlant</span>

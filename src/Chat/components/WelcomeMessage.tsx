@@ -90,18 +90,18 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({
     // Typing indicator that looks like a regular message
     return (
       <div className="flex space-x-3 animate-in slide-in-from-left-5 duration-300">
-        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-          <span className="text-blue-600 font-bold text-sm">F</span>
+        <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
+          <span className="text-primary font-bold text-sm">F</span>
         </div>
 
         <div className="flex-1 max-w-[85%]">
-          <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-md p-4 shadow-sm">
+          <div className="bg-card border-[0.5px] border-border/50 rounded-lg rounded-tl-md p-4 shadow-sm">
             {/* Message Header */}
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-gray-500">
+              <span className="text-xs font-medium text-muted-foreground">
                 {agentName}
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-muted-foreground">
                 {new Date().toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit'
@@ -112,11 +112,11 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({
             {/* Typing Animation */}
             <div className="flex items-center space-x-3">
               <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
               </div>
-              <span className="text-gray-600 font-medium text-sm">
+              <span className="text-muted-foreground font-medium text-sm">
                 {t('status.typing')}
               </span>
             </div>
@@ -130,18 +130,18 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({
     // Actual welcome message that looks like a regular message
     return (
       <div className="flex space-x-3 animate-in slide-in-from-left-5 duration-300">
-        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-          <span className="text-blue-600 font-bold text-sm">F</span>
+        <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
+          <span className="text-primary font-bold text-sm">F</span>
         </div>
 
         <div className="flex-1 max-w-[85%]">
-          <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-md p-4 shadow-sm">
+          <div className="bg-card border-[0.5px] border-border/50 rounded-lg rounded-tl-md p-4 shadow-sm">
             {/* Message Header */}
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-gray-500">
+              <span className="text-xs font-medium text-muted-foreground">
                 {agentName}
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-muted-foreground">
                 {new Date().toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit'
@@ -150,7 +150,7 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({
             </div>
 
             {/* Message Content */}
-            <div className="leading-relaxed font-medium whitespace-pre-wrap text-gray-800">
+            <div className="leading-relaxed font-medium whitespace-pre-wrap text-card-foreground">
               {welcomeText}
             </div>
           </div>

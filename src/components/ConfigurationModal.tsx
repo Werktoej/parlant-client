@@ -1,7 +1,380 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, RefreshCw, ChevronDown } from 'lucide-react';
+import { X, RefreshCw, ChevronDown, Check, Server, User, Globe, Monitor, Sun, Moon, Link, MessageSquare, Paintbrush } from 'lucide-react';
 import { SERVER_CONFIG } from '../config/serverConfig';
+import { ThemeSelector } from './ThemeSelector';
+import { useTheme } from './ThemeProvider';
+import { cn } from '../lib/utils';
 import { log } from '../Chat/utils/logger';
+
+/**
+ * Tab configuration for the modal
+ */
+type ConfigTab = 'connection' | 'chat' | 'appearance' | 'auth';
+
+const tabs: Array<{ id: ConfigTab; label: string; icon: React.ReactNode }> = [
+  { id: 'connection', label: 'Connection', icon: <Link size={14} /> },
+  { id: 'chat', label: 'Chat', icon: <MessageSquare size={14} /> },
+  { id: 'appearance', label: 'Appearance', icon: <Paintbrush size={14} /> },
+  { id: 'auth', label: 'Auth', icon: <User size={14} /> },
+];
+
+/**
+ * Configuration steps for the progress indicator
+ */
+interface ConfigStep {
+  id: ConfigTab;
+  label: string;
+  required: boolean;
+}
+
+const configSteps: ConfigStep[] = [
+  { id: 'connection', label: 'Connection', required: true },
+  { id: 'chat', label: 'Chat', required: false },
+  { id: 'appearance', label: 'Appearance', required: false },
+  { id: 'auth', label: 'Auth', required: true },
+];
+
+/**
+ * Step progress indicator component
+ */
+interface StepProgressProps {
+  steps: ConfigStep[];
+  completedSteps: Set<ConfigTab>;
+  activeTab: ConfigTab;
+  onStepClick: (step: ConfigTab) => void;
+}
+
+const StepProgress: React.FC<StepProgressProps> = ({ steps, completedSteps, activeTab, onStepClick }) => {
+  return (
+    <div className="flex items-center">
+      {steps.map((step, index) => {
+        const isCompleted = completedSteps.has(step.id);
+        const isActive = activeTab === step.id;
+        
+        return (
+          <React.Fragment key={step.id}>
+            {/* Step button */}
+            <button
+              type="button"
+              onClick={() => onStepClick(step.id)}
+              className={cn(
+                "flex flex-col items-center gap-1 group transition-colors flex-shrink-0",
+                isActive ? "opacity-100" : "opacity-70 hover:opacity-100"
+              )}
+            >
+              <div className={cn(
+                "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold transition-all",
+                isCompleted 
+                  ? "bg-green-500 text-white" 
+                  : isActive 
+                    ? "bg-primary text-primary-foreground ring-2 ring-primary/20" 
+                    : "bg-muted text-muted-foreground"
+              )}>
+                {isCompleted ? <Check size={12} /> : index + 1}
+              </div>
+              <span className={cn(
+                "text-[10px] font-medium transition-colors whitespace-nowrap",
+                isActive ? "text-foreground" : "text-muted-foreground"
+              )}>
+                {step.label}
+                {step.required && !isCompleted && <span className="text-destructive ml-0.5">*</span>}
+              </span>
+            </button>
+            
+            {/* Connector line - centered with the circles */}
+            {index < steps.length - 1 && (
+              <div className="flex-1 flex items-center px-1 -mt-4">
+                <div className={cn(
+                  "w-full h-0.5 rounded-full transition-colors",
+                  isCompleted && completedSteps.has(steps[index + 1].id)
+                    ? "bg-green-500"
+                    : "bg-muted"
+                )} />
+              </div>
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+};
+
+/**
+ * Custom dropdown item component for consistent styling
+ */
+interface DropdownItemProps {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  description?: string;
+}
+
+/**
+ * Light/Dark mode toggle component
+ */
+const ModeToggle: React.FC = () => {
+  const { effectiveMode, toggleMode } = useTheme();
+
+  return (
+    <div className="flex gap-1 p-1 bg-muted/50 rounded-md">
+      <button
+        type="button"
+        onClick={() => effectiveMode === 'dark' && toggleMode()}
+        className={cn(
+          'flex items-center gap-1.5 px-3 py-2 rounded text-sm font-medium transition-colors',
+          effectiveMode === 'light'
+            ? 'bg-background text-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'
+        )}
+      >
+        <Sun size={14} />
+        <span>Light</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => effectiveMode === 'light' && toggleMode()}
+        className={cn(
+          'flex items-center gap-1.5 px-3 py-2 rounded text-sm font-medium transition-colors',
+          effectiveMode === 'dark'
+            ? 'bg-background text-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'
+        )}
+      >
+        <Moon size={14} />
+        <span>Dark</span>
+      </button>
+    </div>
+  );
+};
+
+const DropdownItem: React.FC<DropdownItemProps> = ({ selected, onClick, children, description }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={cn(
+      'w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors rounded-md group',
+      selected 
+        ? 'bg-primary/15' 
+        : 'hover:bg-muted/50'
+    )}
+  >
+    <div className="flex-1 min-w-0">
+      <div className="font-medium text-sm text-popover-foreground">
+        {children}
+      </div>
+      {description && (
+        <div className="text-xs truncate text-muted-foreground">
+          {description}
+        </div>
+      )}
+    </div>
+    <div className={cn(
+      'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors',
+      selected 
+        ? 'border-primary bg-primary' 
+        : 'border-muted-foreground/30 group-hover:border-muted-foreground/50'
+    )}>
+      {selected && <Check size={12} className="text-primary-foreground" />}
+    </div>
+  </button>
+);
+
+/**
+ * Custom Agent Dropdown component
+ */
+interface AgentDropdownProps {
+  agents: Agent[];
+  selectedAgentId: string;
+  onSelect: (id: string) => void;
+  isLoading: boolean;
+  hasError: boolean;
+}
+
+/**
+ * Simple dropdown for selecting from a list of options
+ */
+interface SimpleDropdownProps {
+  icon: React.ReactNode;
+  label: string;
+  options: Array<{ value: string; label: string; description?: string }>;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+const SimpleDropdown: React.FC<SimpleDropdownProps> = ({
+  icon,
+  label,
+  options,
+  value,
+  onChange,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const selectedOption = options.find(o => o.value === value);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          'w-full px-4 pr-10 py-3 bg-background border border-input rounded-md text-left transition-all duration-200 text-sm cursor-pointer hover:border-ring focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring',
+          isOpen && 'ring-2 ring-ring border-ring'
+        )}
+      >
+        <span className="text-foreground">{selectedOption?.label || 'Select...'}</span>
+        <ChevronDown
+          size={18}
+          className={cn(
+            'absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-transform',
+            isOpen && 'rotate-180'
+          )}
+        />
+      </button>
+
+      {isOpen && (
+        <>
+          {/* Backdrop with blur */}
+          <div 
+            className="fixed inset-0 z-[99] bg-black/5 backdrop-blur-[2px]" 
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute z-[100] w-full mt-2 bg-popover border border-border rounded-md shadow-2xl overflow-hidden">
+            <div className="px-3 py-2 border-b border-border/50">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                {icon}
+                <span>{label}</span>
+              </div>
+            </div>
+            <div className="p-1.5">
+              {options.map((option) => (
+                <DropdownItem
+                  key={option.value}
+                  selected={value === option.value}
+                  onClick={() => {
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                  description={option.description}
+                >
+                  {option.label}
+                </DropdownItem>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+const AgentDropdown: React.FC<AgentDropdownProps> = ({ 
+  agents, 
+  selectedAgentId, 
+  onSelect, 
+  isLoading, 
+  hasError 
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const selectedAgent = agents.find(a => a.id === selectedAgentId);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const isDisabled = hasError || isLoading || agents.length === 0;
+  const displayText = hasError 
+    ? 'Unable to load agents' 
+    : isLoading 
+    ? 'Loading agents...' 
+    : agents.length === 0 
+    ? 'No agents available' 
+    : selectedAgent?.name || 'Select an agent...';
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => !isDisabled && setIsOpen(!isOpen)}
+        disabled={isDisabled}
+        className={cn(
+          'w-full px-4 pr-10 py-3 bg-background border border-input rounded-md text-left transition-all duration-200 text-sm flex items-center justify-between',
+          isDisabled 
+            ? 'cursor-not-allowed bg-muted text-muted-foreground' 
+            : 'cursor-pointer hover:border-ring focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring',
+          isOpen && 'ring-2 ring-ring border-ring'
+        )}
+      >
+        <span className={cn(
+          selectedAgent ? 'text-foreground' : 'text-muted-foreground'
+        )}>
+          {displayText}
+        </span>
+        <ChevronDown
+          size={18}
+          className={cn(
+            'absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-transform',
+            isOpen && 'rotate-180'
+          )}
+        />
+      </button>
+
+      {isOpen && agents.length > 0 && (
+        <>
+          {/* Backdrop with blur */}
+          <div 
+            className="fixed inset-0 z-[99] bg-black/5 backdrop-blur-[2px]" 
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute z-[100] w-full mt-2 bg-popover border border-border rounded-md shadow-2xl overflow-hidden">
+            <div className="px-3 py-2 border-b border-border/50">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                <User size={12} />
+                <span>Available Agents</span>
+              </div>
+            </div>
+            <div className="p-1.5 max-h-60 overflow-auto">
+              {agents.map((agent) => (
+                <DropdownItem
+                  key={agent.id}
+                  selected={selectedAgentId === agent.id}
+                  onClick={() => {
+                    onSelect(agent.id);
+                    setIsOpen(false);
+                  }}
+                  description={agent.description || `ID: ${agent.id}`}
+                >
+                  {agent.name}
+                </DropdownItem>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 /**
  * Interface for agent information from Parlant server
@@ -114,9 +487,6 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
     }
   ];
 
-  // Get selected agent details
-  const selectedAgent = availableAgents.find(agent => agent.id === agentId);
-
   // Combobox state for server URL
   const [showServerDropdown, setShowServerDropdown] = useState(false);
   const serverInputRef = useRef<HTMLInputElement>(null);
@@ -124,6 +494,28 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
   
   // State for which language tab is active in welcome message editor
   const [editingWelcomeLanguage, setEditingWelcomeLanguage] = useState<'da' | 'en'>(language);
+  
+  // State for active config tab
+  const [activeTab, setActiveTab] = useState<ConfigTab>('connection');
+
+  // Compute completed steps
+  const completedSteps = new Set<ConfigTab>();
+  
+  // Connection is complete when server URL is set, agent is selected, and no errors
+  if (serverUrl.trim() && agentId.trim() && !agentError) {
+    completedSteps.add('connection');
+  }
+  
+  // Auth is complete when a token is selected
+  if (selectedToken) {
+    completedSteps.add('auth');
+  }
+  
+  // Chat is always considered complete (optional settings)
+  completedSteps.add('chat');
+  
+  // Appearance is always considered complete (optional settings)
+  completedSteps.add('appearance');
   
   // Update editing language when main language changes
   useEffect(() => {
@@ -157,28 +549,83 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
     setShowServerDropdown(false);
   };
 
+  // Get current theme to check if purple theme is active
+  const { themePreset, effectiveMode } = useTheme();
+  const isPurpleDark = themePreset === 'purple' && effectiveMode === 'dark';
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
-      <div className="bg-white/10 backdrop-blur-lg rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-white/20 shadow-2xl max-w-md w-full mx-2 sm:mx-4 max-h-[calc(100dvh-2rem)] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6 sm:mb-8">
-          <h3 className="text-xl sm:text-2xl font-bold text-white">Chat Configuration</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            <X size={20} className="sm:w-6 sm:h-6" />
-          </button>
+    <div className="fixed inset-0 flex items-center justify-center p-2 sm:p-4 z-[9999]" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+      {/* Background overlay - purple gradient for purple theme in dark mode, semi-transparent black for others */}
+      {isPurpleDark ? (
+        <>
+          {/* Purple gradient overlays matching the main page */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(270,65%,10%)] via-[hsl(270,60%,25%)] to-[hsl(270,65%,10%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,hsl(270,80%,35%),hsl(270,50%,15%)_70%)]"></div>
+          {/* Semi-transparent overlay for modal backdrop */}
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
+        </>
+      ) : (
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
+      )}
+      <div className="bg-card rounded-lg border border-border shadow-2xl max-w-lg w-full mx-2 sm:mx-4 h-[min(600px,calc(100dvh-2rem))] overflow-hidden relative z-10 flex flex-col">
+        {/* Header */}
+        <div className="bg-card border-b border-border px-4 sm:px-5 pt-4 pb-0 flex-shrink-0">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-semibold text-card-foreground">Settings</h3>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          
+          {/* Step Progress Indicator */}
+          <div className="mb-4">
+            <StepProgress
+              steps={configSteps}
+              completedSteps={completedSteps}
+              activeTab={activeTab}
+              onStepClick={setActiveTab}
+            />
+          </div>
+          
+          {/* Tabs */}
+          <div className="flex gap-1">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-md transition-colors relative',
+                  activeTab === tab.id
+                    ? 'text-primary bg-background'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                )}
+              >
+                {tab.icon}
+                <span className="hidden sm:inline">{tab.label}</span>
+                {activeTab === tab.id && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="space-y-4 sm:space-y-6">
-          {/* Server URL Combobox */}
-          <div>
-            <label htmlFor="serverUrl" className="block text-sm font-medium text-gray-300 mb-2">
-              Parlant Server
-            </label>
-            <div className="relative">
+        {/* Content - fixed height scrollable area */}
+        <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-5 min-h-0">
+          {/* Connection Tab */}
+          {activeTab === 'connection' && (
+          <div className="space-y-5">
+            {/* Server URL Combobox */}
+            <div className="space-y-2">
+              <label htmlFor="serverUrl" className="block text-sm font-medium text-foreground">
+                Server
+              </label>
+              <div className="relative">
               <input
                 ref={serverInputRef}
                 id="serverUrl"
@@ -190,13 +637,13 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
                   // Allow paste to work normally, then show dropdown
                   setTimeout(() => setShowServerDropdown(true), 0);
                 }}
-                className="w-full pl-3 sm:pl-4 pr-10 sm:pr-12 py-2 sm:py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
-                placeholder="Enter server URL or select from list..."
+                className="w-full px-4 pr-10 py-3 bg-background border border-input rounded-md text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all duration-200 text-sm"
+                placeholder="Enter server URL or select..."
               />
               <button
                 type="button"
                 onClick={() => setShowServerDropdown(!showServerDropdown)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Toggle server list"
               >
                 <ChevronDown
@@ -205,263 +652,300 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
                 />
               </button>
               {showServerDropdown && (
-                <div
-                  ref={serverDropdownRef}
-                  className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto"
-                >
-                  {Object.entries(SERVER_CONFIG).map(([url, config]) => (
-                    <button
-                      key={url}
-                      type="button"
-                      onClick={() => handleServerSelect(url)}
-                      className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-white hover:bg-gray-700 transition-colors ${
-                        serverUrl === url ? 'bg-blue-500/20' : ''
-                      }`}
-                    >
-                      <div className="font-medium">{config.name}</div>
-                      <div className="text-xs text-gray-400">{url}</div>
-                    </button>
-                  ))}
-                </div>
+                <>
+                  {/* Backdrop with blur */}
+                  <div 
+                    className="fixed inset-0 z-[99] bg-black/5 backdrop-blur-[2px]" 
+                    onClick={() => setShowServerDropdown(false)}
+                  />
+                  <div
+                    ref={serverDropdownRef}
+                    className="absolute z-[100] w-full mt-2 bg-popover border border-border rounded-md shadow-2xl overflow-hidden"
+                  >
+                    <div className="px-3 py-2 border-b border-border/50">
+                      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <Server size={12} />
+                        <span>Available Servers</span>
+                      </div>
+                    </div>
+                    <div className="p-1.5 max-h-60 overflow-auto">
+                      {Object.entries(SERVER_CONFIG).map(([url, config]) => (
+                        <DropdownItem
+                          key={url}
+                          selected={serverUrl === url}
+                          onClick={() => handleServerSelect(url)}
+                          description={url}
+                        >
+                          {config.name}
+                        </DropdownItem>
+                      ))}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
             
             {/* Error Message */}
             {agentError && (
-              <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
-                <p className="text-red-300 text-sm">{agentError}</p>
+              <div className="mt-3 p-3 bg-destructive text-destructive-foreground border border-destructive rounded-lg">
+                <p className="text-sm">{agentError}</p>
               </div>
             )}
           </div>
 
-          {/* Agent Selection */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label htmlFor="agentId" className="block text-sm font-medium text-gray-300">
-                Agent
-              </label>
-              <button
-                onClick={onFetchAgents}
-                disabled={isLoadingAgents || !serverUrl.trim() || !!agentError}
-                className="text-blue-400 hover:text-blue-300 disabled:text-gray-600 transition-colors flex items-center space-x-1"
-                title="Refresh agents"
-              >
-                <RefreshCw size={16} className={isLoadingAgents ? 'animate-spin' : ''} />
-                <span className="text-xs">Refresh</span>
-              </button>
-            </div>
-
-            <div className="relative">
-              <select
-                id="agentId"
-                value={agentId}
-                onChange={(e) => onAgentIdChange(e.target.value)}
-                disabled={!!agentError || isLoadingAgents || availableAgents.length === 0}
-                className={`w-full pl-3 sm:pl-4 pr-10 sm:pr-12 py-2 sm:py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base appearance-none ${
-                  agentError || isLoadingAgents || availableAgents.length === 0
-                    ? 'cursor-not-allowed opacity-50'
-                    : 'cursor-pointer'
-                }`}
-              >
-                <option value="">
-                  {agentError
-                    ? 'Unable to load agents'
-                    : isLoadingAgents
-                    ? 'Loading agents...'
-                    : availableAgents.length === 0
-                    ? 'No agents available'
-                    : 'Select an agent...'}
-                </option>
-                {availableAgents.map((agent) => (
-                  <option key={agent.id} value={agent.id}>
-                    {agent.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                size={20}
-                className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${
-                  agentError || isLoadingAgents || availableAgents.length === 0
-                    ? 'text-gray-600'
-                    : 'text-gray-400'
-                }`}
-              />
-            </div>
-
-            {isLoadingAgents && (
-              <p className="text-xs text-gray-400 mt-1 flex items-center space-x-1">
-                <RefreshCw size={12} className="animate-spin" />
-                <span>Loading agents from server...</span>
-              </p>
-            )}
-          </div>
-
-          {/* Welcome Message per Language */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Welcome Message
-            </label>
-            {/* Language Tabs */}
-            <div className="flex space-x-2 mb-3 border-b border-gray-600">
-              {(['da', 'en'] as const).map((lang) => (
+            {/* Agent Selection */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label htmlFor="agentId" className="block text-sm font-medium text-foreground">
+                  Agent
+                </label>
                 <button
-                  key={lang}
-                  type="button"
-                  onClick={() => setEditingWelcomeLanguage(lang)}
-                  className={`px-3 py-2 text-sm font-medium transition-colors ${
-                    editingWelcomeLanguage === lang
-                      ? 'text-blue-400 border-b-2 border-blue-400'
-                      : 'text-gray-400 hover:text-gray-300'
-                  }`}
+                  onClick={onFetchAgents}
+                  disabled={isLoadingAgents || !serverUrl.trim() || !!agentError}
+                  className="text-primary hover:text-primary/80 disabled:text-muted-foreground transition-colors flex items-center gap-1.5"
+                  title="Refresh agents"
                 >
-                  {lang === 'da' ? 'Dansk' : 'English'}
+                  <RefreshCw size={14} className={isLoadingAgents ? 'animate-spin' : ''} />
+                  <span className="text-xs font-medium">Refresh</span>
                 </button>
-              ))}
-            </div>
-            {/* Message Input for Selected Language */}
-            <textarea
-              id="welcomeMessage"
-              value={welcomeMessages[editingWelcomeLanguage]}
-              onChange={(e) => {
-                onWelcomeMessagesChange({
-                  ...welcomeMessages,
-                  [editingWelcomeLanguage]: e.target.value
-                });
-              }}
-              rows={4}
-              className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base resize-y"
-              placeholder={`Enter welcome message for ${editingWelcomeLanguage === 'da' ? 'Danish' : 'English'}...`}
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              Use {'{customerName}'} and {'{agentName}'} as placeholders. This message will be sent automatically when starting a new chat session.
-            </p>
-          </div>
-
-          {/* Language Selection */}
-          <div>
-            <label htmlFor="language" className="block text-sm font-medium text-gray-300 mb-2">
-              Language
-            </label>
-            <div className="relative">
-              <select
-                id="language"
-                value={language}
-                onChange={(e) => onLanguageChange(e.target.value as 'da' | 'en')}
-                className="w-full pl-3 sm:pl-4 pr-10 sm:pr-12 py-2 sm:py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base appearance-none cursor-pointer"
-              >
-                <option value="en">English</option>
-                <option value="da">Dansk</option>
-              </select>
-              <ChevronDown
-                size={20}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-              />
-            </div>
-          </div>
-
-          {/* Initial Mode Selection */}
-          <div>
-            <label htmlFor="initialMode" className="block text-sm font-medium text-gray-300 mb-2">
-              Initial Display Mode
-            </label>
-            <div className="relative">
-              <select
-                id="initialMode"
-                value={initialMode}
-                onChange={(e) => onInitialModeChange(e.target.value as 'popup' | 'fullscreen' | 'minimized')}
-                className="w-full pl-3 sm:pl-4 pr-10 sm:pr-12 py-2 sm:py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base appearance-none cursor-pointer"
-              >
-                <option value="popup">Popup</option>
-                <option value="fullscreen">Fullscreen</option>
-                <option value="minimized">Minimized</option>
-              </select>
-              <ChevronDown
-                size={20}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-              />
-            </div>
-            <p className="text-xs text-gray-400 mt-1">
-              How the chat window appears when first opened
-            </p>
-          </div>
-
-          {/* Auto Start Session Toggle */}
-          <div>
-            <label className="flex items-center justify-between cursor-pointer">
-              <div>
-                <span className="block text-sm font-medium text-gray-300">Auto Start Session</span>
-                <span className="text-xs text-gray-400">Automatically create a session when chat opens</span>
               </div>
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={autoStartSession}
-                  onChange={(e) => onAutoStartSessionChange(e.target.checked)}
-                  className="sr-only"
-                />
-                <div
-                  className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                    autoStartSession ? 'bg-blue-500' : 'bg-gray-600'
-                  }`}
-                  onClick={() => onAutoStartSessionChange(!autoStartSession)}
-                >
-                  <div
-                    className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                      autoStartSession ? 'translate-x-5' : 'translate-x-0.5'
-                    }`}
-                    style={{ marginTop: '2px' }}
-                  />
-                </div>
-              </div>
-            </label>
-          </div>
 
-          {/* Token Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-3">
-              Select User
-            </label>
-            <div className="space-y-3">
-              {tokens.map((token) => (
-                <div
-                  key={token.id}
-                  className={`border rounded-lg p-4 cursor-pointer transition-all ${selectedToken === token.token
-                    ? 'border-blue-400 bg-blue-500/10'
-                    : 'border-gray-600 hover:border-gray-500 bg-gray-800/30'
-                    }`}
-                  onClick={() => onTokenSelect(token.id)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-white">{token.name}</p>
-                      <p className="text-sm text-gray-400">Customer ID: {token.customerId}</p>
-                    </div>
-                    <div className={`w-4 h-4 rounded-full border-2 ${selectedToken === token.token
-                      ? 'border-blue-400 bg-blue-400'
-                      : 'border-gray-500'
-                      }`}>
-                      {selectedToken === token.token && (
-                        <div className="w-full h-full rounded-full bg-white scale-50"></div>
-                      )}
-                    </div>
-                  </div>
-                  {selectedToken === token.token && (
-                    <div className="mt-2 p-2 bg-blue-500/10 rounded text-xs font-mono text-blue-300 break-all">
-                      {token.token.substring(0, 60)}...
-                    </div>
-                  )}
-                </div>
-              ))}
+              <AgentDropdown
+                agents={availableAgents}
+                selectedAgentId={agentId}
+                onSelect={onAgentIdChange}
+                isLoading={isLoadingAgents}
+                hasError={!!agentError}
+              />
+
+              {isLoadingAgents && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <RefreshCw size={12} className="animate-spin" />
+                  <span>Loading agents from server...</span>
+                </p>
+              )}
             </div>
-            {selectedToken && (
-              <p className="text-xs text-green-400 mt-2 flex items-center">
-                <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-                Authentication token selected
+          </div>
+          )}
+
+          {/* Chat Tab */}
+          {activeTab === 'chat' && (
+          <div className="space-y-5">
+            {/* Welcome Message per Language */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Welcome Message
+              </label>
+              {/* Language Tabs */}
+              <div className="flex border-b border-border">
+                {(['da', 'en'] as const).map((lang) => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => setEditingWelcomeLanguage(lang)}
+                    className={cn(
+                      'px-4 py-2 text-sm font-medium transition-colors relative',
+                      editingWelcomeLanguage === lang
+                        ? 'text-primary'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    {lang === 'da' ? 'Dansk' : 'English'}
+                    {editingWelcomeLanguage === lang && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                    )}
+                  </button>
+                ))}
+              </div>
+              {/* Message Input for Selected Language */}
+              <textarea
+                id="welcomeMessage"
+                value={welcomeMessages[editingWelcomeLanguage]}
+                onChange={(e) => {
+                  onWelcomeMessagesChange({
+                    ...welcomeMessages,
+                    [editingWelcomeLanguage]: e.target.value
+                  });
+                }}
+                rows={3}
+                className="w-full px-4 py-3 bg-background border border-input rounded-md text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all duration-200 text-sm resize-y"
+                placeholder={`Enter welcome message for ${editingWelcomeLanguage === 'da' ? 'Danish' : 'English'}...`}
+              />
+              <p className="text-xs text-muted-foreground">
+                Use {'{customerName}'} and {'{agentName}'} as placeholders.
               </p>
-            )}
-          </div>
+            </div>
 
-          {/* Action Button */}
+            {/* Language & Display Mode - Side by Side on larger screens */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Language Selection */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-foreground">
+                  Language
+                </label>
+                <SimpleDropdown
+                  icon={<Globe size={12} />}
+                  label="Language"
+                  options={[
+                    { value: 'en', label: 'English', description: 'English' },
+                    { value: 'da', label: 'Dansk', description: 'Danish' },
+                  ]}
+                  value={language}
+                  onChange={(value) => onLanguageChange(value as 'da' | 'en')}
+                />
+              </div>
+
+              {/* Initial Mode Selection */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-foreground">
+                  Display Mode
+                </label>
+                <SimpleDropdown
+                  icon={<Monitor size={12} />}
+                  label="Display Mode"
+                  options={[
+                    { value: 'popup', label: 'Popup', description: 'Floating' },
+                    { value: 'fullscreen', label: 'Fullscreen', description: 'Full' },
+                    { value: 'minimized', label: 'Minimized', description: 'Collapsed' },
+                  ]}
+                  value={initialMode}
+                  onChange={(value) => onInitialModeChange(value as 'popup' | 'fullscreen' | 'minimized')}
+                />
+              </div>
+            </div>
+
+            {/* Auto Start Session Toggle */}
+            <button
+              type="button"
+              onClick={() => onAutoStartSessionChange(!autoStartSession)}
+              className="w-full flex items-center justify-between gap-4 p-4 rounded-md border border-border hover:border-primary/30 hover:bg-muted/20 transition-colors cursor-pointer"
+            >
+              <div className="text-left">
+                <span className="block text-sm font-medium text-foreground">Auto Start Session</span>
+                <span className="text-xs text-muted-foreground">Create session automatically when chat opens</span>
+              </div>
+              <div 
+                className={cn(
+                  'relative w-12 h-7 rounded-full transition-colors duration-200 flex-shrink-0',
+                  autoStartSession ? 'bg-primary' : 'bg-muted-foreground/30'
+                )}
+              >
+                <div
+                  className={cn(
+                    'absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-200',
+                    autoStartSession ? 'left-6' : 'left-1'
+                  )}
+                />
+              </div>
+            </button>
+          </div>
+          )}
+
+          {/* Appearance Tab */}
+          {activeTab === 'appearance' && (
+          <div className="space-y-5">
+            {/* Light/Dark Mode Toggle */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Mode
+              </label>
+              <ModeToggle />
+            </div>
+
+            {/* Theme Selection */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Color Theme
+              </label>
+              <ThemeSelector variant="buttons" size="sm" />
+            </div>
+          </div>
+          )}
+
+          {/* Auth Tab */}
+          {activeTab === 'auth' && (
+          <div className="space-y-5">
+            {/* Token Selection */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Select User
+              </label>
+            <div className="space-y-2">
+              {tokens.map((token) => {
+                const isSelected = selectedToken === token.token;
+                return (
+                  <button
+                    key={token.id}
+                    type="button"
+                    onClick={() => onTokenSelect(token.id)}
+                    className={cn(
+                      'w-full border rounded-md p-4 cursor-pointer transition-all text-left group',
+                      isSelected
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border hover:border-primary/50 hover:bg-muted/30'
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Avatar */}
+                      <div className={cn(
+                        'w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-colors',
+                        isSelected 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary'
+                      )}>
+                        {token.name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className={cn(
+                          'font-medium',
+                          isSelected ? 'text-primary' : 'text-foreground'
+                        )}>
+                          {token.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          ID: {token.customerId}
+                        </p>
+                      </div>
+                      
+                      {/* Check indicator */}
+                      <div className={cn(
+                        'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors',
+                        isSelected 
+                          ? 'border-primary bg-primary' 
+                          : 'border-muted-foreground/30 group-hover:border-primary/50'
+                      )}>
+                        {isSelected && <Check size={12} className="text-primary-foreground" />}
+                      </div>
+                    </div>
+                    
+                    {/* Token preview when selected */}
+                    {isSelected && (
+                      <div className="mt-3 p-2 bg-background/50 rounded-lg border border-border/50">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Token</p>
+                        <p className="text-xs font-mono text-foreground/80 break-all leading-relaxed">
+                          {token.token.substring(0, 50)}...
+                        </p>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+              {selectedToken && (
+                <div className="flex items-center gap-2 text-xs text-primary">
+                  <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
+                  <span>Authentication active</span>
+                </div>
+              )}
+            </div>
+          </div>
+          )}
+        </div>
+
+        {/* Footer with Action Button */}
+        <div className="flex-shrink-0 bg-card border-t border-border px-4 sm:px-5 py-4">
           {onStartChat ? (
             <button
               onClick={() => {
@@ -477,29 +961,13 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
                 onStartChat();
               }}
               disabled={!serverUrl.trim() || !agentId.trim() || !selectedToken || !!agentError}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:hover:scale-100 shadow-lg hover:shadow-xl text-base"
+              className="w-full bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground font-semibold py-3.5 rounded-md transition-all duration-200 text-sm"
             >
               {isChatActive ? 'Apply Changes' : 'Start Chat'}
             </button>
           ) : (
-            <div className="w-full p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-center">
+            <div className="w-full p-4 bg-destructive/10 text-destructive border border-destructive/30 rounded-md text-center text-sm">
               No onStartChat function provided
-            </div>
-          )}
-
-          {/* Agent Info */}
-          {selectedAgent && (
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-blue-300">Selected Agent</p>
-                <span className="text-xs text-gray-400 font-mono">{selectedAgent.id}</span>
-              </div>
-              <p className="text-sm text-white font-medium">{selectedAgent.name}</p>
-              {selectedAgent.composition_mode && (
-                <p className="text-xs text-gray-400">
-                  Mode: {selectedAgent.composition_mode} • Max iterations: {selectedAgent.max_engine_iterations}
-                </p>
-              )}
             </div>
           )}
         </div>

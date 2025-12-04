@@ -40,6 +40,8 @@ export interface ParlantChatBotProps {
   onSessionCreated?: (sessionId: string) => void;
   /** Callback when chat is closed/minimized (optional) */
   onClose?: () => void;
+  /** Callback when display mode changes (optional) */
+  onDisplayModeChange?: (mode: 'popup' | 'fullscreen' | 'minimized') => void;
   /** Whether to enable automatic session creation on mount (default: true) */
   autoStartSession?: boolean;
   /** Whether to show "Powered by Parlant" attribution (optional, default: false) */
@@ -89,6 +91,7 @@ export const ParlantChatBot: React.FC<ParlantChatBotProps> = ({
   pollingConfig,
   onSessionCreated,
   onClose,
+  onDisplayModeChange,
   autoStartSession = true,
   showAttribution = true,
   enableLogging = false,
@@ -202,7 +205,8 @@ export const ParlantChatBot: React.FC<ParlantChatBotProps> = ({
     setIsChatMinimized(true);
     setIsFullScreen(false);
     onClose?.();
-  }, [onClose]);
+    onDisplayModeChange?.('minimized');
+  }, [onClose, onDisplayModeChange]);
 
   /**
    * Restores the chat from minimized state
@@ -210,7 +214,8 @@ export const ParlantChatBot: React.FC<ParlantChatBotProps> = ({
   const handleRestoreChat = useCallback(() => {
     setIsChatMinimized(false);
     setIsChatEnabled(true);
-  }, []);
+    onDisplayModeChange?.('popup');
+  }, [onDisplayModeChange]);
 
   /**
    * Expands to full screen
@@ -218,7 +223,8 @@ export const ParlantChatBot: React.FC<ParlantChatBotProps> = ({
   const handleExpand = useCallback(() => {
     log(`Expanding to fullscreen with session: ${currentSessionId}`);
     setIsFullScreen(true);
-  }, [currentSessionId]);
+    onDisplayModeChange?.('fullscreen');
+  }, [currentSessionId, onDisplayModeChange]);
 
   /**
    * Contracts from full screen
@@ -226,7 +232,8 @@ export const ParlantChatBot: React.FC<ParlantChatBotProps> = ({
   const handleContract = useCallback(() => {
     log(`Contracting to popup with session: ${currentSessionId}`);
     setIsFullScreen(false);
-  }, [currentSessionId]);
+    onDisplayModeChange?.('popup');
+  }, [currentSessionId, onDisplayModeChange]);
 
 
   return (
@@ -313,7 +320,7 @@ export const ParlantChatBot: React.FC<ParlantChatBotProps> = ({
         <div className="fixed bottom-4 right-4 z-50">
           <button
             onClick={handleRestoreChat}
-            className="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 animate-in slide-in-from-bottom-5"
+            className="bg-primary hover:bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 animate-in slide-in-from-bottom-5"
             title="Restore Chat"
             aria-label="Restore Chat"
           >

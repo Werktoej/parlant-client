@@ -3,6 +3,9 @@ import { Settings } from 'lucide-react'
 import { ParlantChatBot } from './Chat'
 import { ConfigurationModal } from './components/ConfigurationModal'
 import { ChatErrorBoundary } from './components/ErrorBoundary'
+import { ThemeToggle, ThemeSelector } from './components'
+import { useTheme } from './components/ThemeProvider'
+import { useCustomerTheme } from './lib/theme/useCustomerTheme'
 import { getEnvConfig, validateEnvConfig } from './config/envConfig'
 import { log, logError } from './Chat/utils/logger'
 
@@ -40,6 +43,9 @@ function App() {
   const [selectedToken, setSelectedToken] = useState<string | null>(null)
   const [customerId, setCustomerId] = useState<string>('')
   const [customerName, setCustomerName] = useState<string>('')
+  
+  // Update theme when customerId changes
+  useCustomerTheme(customerId)
   const [isChatEnabled, setIsChatEnabled] = useState<boolean>(false)
   const [welcomeMessages, setWelcomeMessages] = useState<Record<'da' | 'en', string>>({
     da: 'Hej {customerName} - velkommen til {agentName}!\n\nHvordan kan jeg hjælpe dig i dag? Du er velkommen til at spørge om hvad som helst!',
@@ -47,6 +53,7 @@ function App() {
   })
   const [language, setLanguage] = useState<'da' | 'en'>(envConfig.language || 'en')
   const [initialMode, setInitialMode] = useState<'popup' | 'fullscreen' | 'minimized'>(envConfig.initialMode || 'popup')
+  const [currentDisplayMode, setCurrentDisplayMode] = useState<'popup' | 'fullscreen' | 'minimized'>(envConfig.initialMode || 'popup')
   const [autoStartSession, setAutoStartSession] = useState<boolean>(envConfig.autoStartSession ?? true)
 
   // JWT Tokens configuration
@@ -180,30 +187,38 @@ function App() {
 
   // Get selected agent details
   const selectedAgent = availableAgents.find(agent => agent.id === agentId)
+  
+  // Get current theme to check if purple theme is active
+  const { themePreset, effectiveMode } = useTheme()
+  const isPurpleTheme = themePreset === 'purple'
+  const isPurpleDark = isPurpleTheme && effectiveMode === 'dark'
 
   return (
-    <div className="h-screen w-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden relative">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.3),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(120,119,198,0.2),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(120,119,198,0.2),transparent_50%)]"></div>
-      </div>
+    <div className="h-screen w-screen bg-background overflow-hidden relative">
+      {/* Beautiful purple gradient overlays - only for purple theme in dark mode */}
+      {isPurpleDark && (
+        <>
+          {/* Diagonal gradient - darker at corners, lighter vibrant purple in center */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(270,65%,10%)] via-[hsl(270,60%,25%)] to-[hsl(270,65%,10%)] pointer-events-none"></div>
+          {/* Radial gradient - vibrant purple center, darker edges - matches beautiful gradient */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,hsl(270,80%,35%),hsl(270,50%,15%)_70%)] pointer-events-none"></div>
+        </>
+      )}
 
       {/* Main Content Area */}
       <div className="relative h-full flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
         {/* Hero Section */}
         <div className="text-center space-y-6 sm:space-y-8 max-w-4xl mx-auto px-2">
           <div className="space-y-2 sm:space-y-4">
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white leading-tight">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-foreground leading-tight">
               {selectedAgent?.name || envConfig.agentName}
             </h1>
-            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light text-white/80">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light text-muted-foreground">
               Chat Experience
             </h2>
           </div>
 
-          <p className="text-base sm:text-lg md:text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed px-4">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-4">
             Experience intelligent conversations with our advanced AI chatbot.
             Configure your settings and start chatting instantly.
           </p>
@@ -212,7 +227,7 @@ function App() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8 sm:mt-12">
               <button
                 onClick={toggleSettings}
-                className="bg-white/10 backdrop-blur-lg border border-white/20 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:bg-white/20 transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl text-sm sm:text-base"
+                className="bg-card border border-border text-card-foreground px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:bg-muted transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl text-sm sm:text-base"
               >
                 <Settings size={18} className="sm:w-5 sm:h-5" />
                 <span>Configure Chat</span>
@@ -265,6 +280,7 @@ function App() {
             initialMode={initialMode}
             onSessionCreated={handleSessionCreated}
             onClose={handleChatClose}
+            onDisplayModeChange={setCurrentDisplayMode}
             autoStartSession={autoStartSession}
             enableLogging={envConfig.enableLogging}
             pollingConfig={envConfig.pollingConfig}
@@ -275,15 +291,26 @@ function App() {
         </ChatErrorBoundary>
       )}
 
-      {/* Settings Toggle (when chat is active) */}
-      {isChatEnabled && (
-        <button
-          onClick={toggleSettings}
-          className="fixed right-4 sm:right-8 bg-white/10 backdrop-blur-lg border border-white/20 text-white p-3 rounded-full hover:bg-white/20 transition-all duration-300 shadow-lg hover:shadow-xl z-40"
-          style={{ top: 'max(1rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
-        >
-          <Settings size={20} />
-        </button>
+      {/* Settings Toggle, Theme Selector, and Theme Toggle (when chat is active but NOT in fullscreen) */}
+      {isChatEnabled && currentDisplayMode !== 'fullscreen' && (
+        <div className="fixed right-4 sm:right-8 flex items-center gap-2 z-[100]" style={{ top: 'max(1rem, calc(env(safe-area-inset-top) + 0.5rem))' }}>
+          <ThemeSelector size="sm" />
+          <ThemeToggle size="sm" />
+          <button
+            onClick={toggleSettings}
+            className="h-9 w-9 inline-flex items-center justify-center rounded-full bg-card/80 backdrop-blur-md border border-border/50 shadow-lg hover:shadow-xl text-foreground hover:bg-card hover:scale-105 transition-all duration-200"
+          >
+            <Settings size={16} />
+          </button>
+        </div>
+      )}
+      
+      {/* Theme Selector and Theme Toggle (when chat is not active) */}
+      {!isChatEnabled && (
+        <div className="fixed right-4 sm:right-8 flex items-center gap-2 z-[100]" style={{ top: 'max(1rem, calc(env(safe-area-inset-top) + 0.5rem))' }}>
+          <ThemeSelector size="sm" />
+          <ThemeToggle size="sm" />
+        </div>
       )}
     </div>
   )

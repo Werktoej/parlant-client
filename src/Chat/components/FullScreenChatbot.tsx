@@ -4,6 +4,7 @@ import { ChatWindow } from './ChatWindow';
 import { SessionList, type SessionListRef } from './SessionList';
 import { ConfigurationModal } from '../../components/ConfigurationModal';
 import { useTranslation, type Language } from '../hooks/useTranslation';
+import { cn } from '../../lib/utils';
 import { log } from '../utils/logger';
 import { isAtBreakpoint } from '../constants/ui';
 import type { PollingConfig } from '../types/chat';
@@ -218,12 +219,12 @@ export const FullScreenChatbot: React.FC<FullScreenChatbotProps> = ({
   }, [showSessions]);
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex">
+    <div className="fixed inset-0 bg-background z-50 flex">
       {/* Left Sidebar - Session List */}
       {showSessions && (
         <>
           {/* Desktop sidebar */}
-          <div className="hidden md:block w-64 lg:w-80 flex-shrink-0 bg-white border-r border-gray-200">
+          <div className="hidden md:block w-64 lg:w-80 flex-shrink-0 bg-card border-r border-border">
             <SessionList
               ref={sessionListRef}
               serverUrl={serverUrl}
@@ -240,16 +241,16 @@ export const FullScreenChatbot: React.FC<FullScreenChatbotProps> = ({
           <div className="md:hidden fixed inset-0 z-[70] flex">
             {/* Backdrop */}
             <div
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              className="absolute inset-0 bg-black"
               onClick={handleToggleSessions}
             />
             {/* Sidebar */}
-            <div className="relative w-full max-w-sm bg-white h-full flex flex-col" style={{ paddingTop: 'max(0rem, env(safe-area-inset-top))', paddingBottom: 'max(0rem, env(safe-area-inset-bottom))' }}>
+            <div className="relative w-full max-w-sm bg-card h-full flex flex-col" style={{ paddingTop: 'max(0rem, env(safe-area-inset-top))', paddingBottom: 'max(0rem, env(safe-area-inset-bottom))' }}>
               {/* Close Button for Mobile */}
               <div className="absolute top-4 right-4 z-10">
                 <button
                   onClick={handleToggleSessions}
-                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors bg-white/80 backdrop-blur-sm rounded-full shadow-sm"
+                  className="p-2 text-muted-foreground hover:text-foreground transition-colors bg-card rounded-full shadow-sm"
                 >
                   <X size={20} />
                 </button>
@@ -274,7 +275,7 @@ export const FullScreenChatbot: React.FC<FullScreenChatbotProps> = ({
       )}
 
       {/* Right Side - Chat Interface */}
-      <div className="flex-1 flex flex-col bg-gradient-to-br from-background-secondary to-background-white min-w-0">
+      <div className="flex-1 flex flex-col bg-background min-w-0">
         {/* Chat Content using ChatWindow */}
         <div className="flex-1 overflow-hidden">
           <ChatWindow
@@ -302,15 +303,17 @@ export const FullScreenChatbot: React.FC<FullScreenChatbotProps> = ({
         </div>
 
         {/* Mobile Bottom Menu Bar - Only visible on mobile in fullscreen */}
-        <div className="md:hidden bg-gradient-to-r from-secondary-600 via-primary-600 to-secondary-700 border-t border-secondary-500/20" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+        <div className="md:hidden bg-primary border-t border-primary" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
           <div className="flex items-center justify-around py-3 px-4">
             {/* Conversations Button */}
             <button
               onClick={handleToggleSessions}
-              className={`flex flex-col items-center space-y-1 p-2 rounded-lg transition-all duration-200 ${showSessions
-                ? 'bg-white/20 text-white'
-                : 'text-white/80 hover:text-white hover:bg-white/10'
-                }`}
+              className={cn(
+                'flex flex-col items-center space-y-1 p-2 rounded-lg transition-all duration-200',
+                showSessions
+                  ? 'bg-background text-primary'
+                  : 'text-primary-foreground hover:bg-background hover:text-primary'
+              )}
             >
               <MessageSquare size={20} />
               <span className="text-xs font-medium">{t('conversations.title')}</span>
@@ -319,7 +322,7 @@ export const FullScreenChatbot: React.FC<FullScreenChatbotProps> = ({
             {/* Settings Button */}
             <button
               onClick={toggleSettings}
-              className="flex flex-col items-center space-y-1 p-2 rounded-lg transition-all duration-200 text-white/80 hover:text-white hover:bg-white/10"
+              className="flex flex-col items-center space-y-1 p-2 rounded-lg transition-all duration-200 text-primary-foreground hover:bg-background hover:text-primary"
             >
               <Settings size={20} />
               <span className="text-xs font-medium">{t('settings.title')}</span>
@@ -328,7 +331,7 @@ export const FullScreenChatbot: React.FC<FullScreenChatbotProps> = ({
             {/* Exit Fullscreen Button */}
             <button
               onClick={handleContractWithSessionSync}
-              className="flex flex-col items-center space-y-1 p-2 rounded-lg transition-all duration-200 text-white/80 hover:text-white hover:bg-white/10"
+              className="flex flex-col items-center space-y-1 p-2 rounded-lg transition-all duration-200 text-primary-foreground hover:bg-background hover:text-primary"
             >
               <Minimize2 size={20} />
               <span className="text-xs font-medium">{t('common.minimize')}</span>

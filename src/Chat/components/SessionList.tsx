@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } fro
 import { Plus, MessageCircle, Calendar, Trash2, Search, RotateCw } from 'lucide-react';
 import { useTranslation, type Language } from '../hooks/useTranslation';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { cn } from '../../lib/utils';
 import { log, logWarn, logError } from '../utils/logger';
 
 /**
@@ -351,18 +352,18 @@ export const SessionList = forwardRef<SessionListRef, SessionListProps>(
     }, [fetchSessions]);
 
     return (
-      <div className="w-full h-full bg-white border-r border-gray-200 flex flex-col">
+      <div className="w-full h-full bg-card border-r border-border flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">{t('sessions.title')}</h2>
+            <h2 className="text-lg font-semibold text-card-foreground">{t('sessions.title')}</h2>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => {
                   setIsRefreshing(true);
                   fetchSessions().finally(() => setIsRefreshing(false));
                 }}
-                className="bg-gray-500 hover:bg-gray-600 text-white p-2 rounded-lg transition-colors"
+                className="bg-muted hover:bg-muted text-muted-foreground p-2 rounded-lg transition-colors"
                 title={t('sessions.refresh')}
                 disabled={isRefreshing}
               >
@@ -370,7 +371,7 @@ export const SessionList = forwardRef<SessionListRef, SessionListProps>(
               </button>
               <button
                 onClick={onNewSession}
-                className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors"
+                className="bg-primary hover:bg-primary text-primary-foreground p-2 rounded-lg transition-all shadow-md hover:shadow-lg"
                 title={t('sessions.newChat')}
               >
                 <Plus size={20} />
@@ -380,13 +381,13 @@ export const SessionList = forwardRef<SessionListRef, SessionListProps>(
 
           {/* Search */}
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               placeholder={t('sessions.search')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 bg-background border border-input rounded-lg text-base text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
             />
           </div>
         </div>
@@ -395,23 +396,23 @@ export const SessionList = forwardRef<SessionListRef, SessionListProps>(
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center h-32">
-              <div className="text-gray-500">{t('sessions.loading')}</div>
+              <div className="text-muted-foreground">{t('sessions.loading')}</div>
             </div>
           ) : error ? (
             <div className="p-4">
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-red-600 text-sm">{error}</p>
+              <div className="bg-destructive text-destructive-foreground border border-destructive rounded-lg p-3">
+                <p className="text-sm">{error}</p>
                 <button
                   onClick={fetchSessions}
-                  className="mt-2 text-red-600 hover:text-red-800 text-sm underline"
+                  className="mt-2 text-sm underline hover:text-primary"
                 >
                   {t('sessions.retry')}
                 </button>
               </div>
             </div>
           ) : filteredSessions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-32 text-gray-600">
-              <MessageCircle size={32} className="mb-2 opacity-50" />
+            <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+              <MessageCircle size={32} className="mb-2 text-muted-foreground" />
               <p className="text-sm">
                 {searchTerm ? t('sessions.noResults') : t('sessions.noSessions')}
               </p>
@@ -421,10 +422,12 @@ export const SessionList = forwardRef<SessionListRef, SessionListProps>(
               {filteredSessions.map((session) => (
                 <div
                   key={session.id}
-                  className={`group relative p-3 rounded-lg cursor-pointer transition-colors mb-1 select-none ${selectedSessionId === session.id
-                    ? 'bg-blue-50 border border-blue-200'
-                    : 'hover:bg-gray-50 border border-transparent'
-                    }`}
+                  className={cn(
+                    'group relative p-3 rounded-lg cursor-pointer transition-colors mb-1 select-none border',
+                    selectedSessionId === session.id
+                      ? 'bg-primary text-primary-foreground border-primary shadow-md'
+                      : 'hover:bg-muted border-border'
+                  )}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -433,10 +436,10 @@ export const SessionList = forwardRef<SessionListRef, SessionListProps>(
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-medium text-gray-800 truncate">
+                      <h3 className="text-sm font-medium text-card-foreground truncate">
                         {getSessionTitle(session)}
                       </h3>
-                      <div className="flex items-center mt-1 text-xs text-gray-600">
+                      <div className="flex items-center mt-1 text-xs text-muted-foreground">
                         <Calendar size={12} className="mr-1" />
                         <span>{(() => {
                           // Try to get date from session fields first
@@ -461,7 +464,7 @@ export const SessionList = forwardRef<SessionListRef, SessionListProps>(
                         e.stopPropagation();
                         openDeleteModal(session);
                       }}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-all"
+                      className="invisible group-hover:visible p-1 text-muted-foreground hover:text-destructive transition-all"
                       title={t('sessions.delete')}
                     >
                       <Trash2 size={14} />
