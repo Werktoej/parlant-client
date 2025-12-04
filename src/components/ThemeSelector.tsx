@@ -153,7 +153,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
         aria-expanded={isOpen}
       >
         <Palette size={14} className="text-primary" />
-        <span className="font-medium">{themePreset ? themeDisplayNames[themePreset] || themePreset : 'Theme'}</span>
+        <span className="font-medium">{themeDisplayNames[themePreset] || themePreset}</span>
       </button>
 
       {isOpen && (

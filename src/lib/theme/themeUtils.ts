@@ -1,4 +1,5 @@
 import type { ThemeColors } from './types';
+import { getStoredThemeMode, saveStoredThemeMode } from './cookieStorage';
 
 /**
  * Converts theme colors to CSS variables
@@ -40,34 +41,22 @@ export function applyThemeColors(colors: ThemeColors, prefix: string = ''): void
 }
 
 /**
- * Gets the current theme mode from localStorage or system preference
+ * Gets the current theme mode from cookie or system preference
  * @returns Theme mode ('light', 'dark', or 'system')
  */
 export function getThemeMode(): 'light' | 'dark' | 'system' {
   if (typeof window === 'undefined') return 'system';
-  
-  try {
-    const stored = localStorage.getItem('parlant-theme-mode');
-    if (stored === 'light' || stored === 'dark' || stored === 'system') {
-      return stored;
-    }
-  } catch (error) {
-    console.error('Failed to load theme mode:', error);
-  }
-  
-  return 'system';
+
+  const stored = getStoredThemeMode();
+  return stored || 'system';
 }
 
 /**
- * Saves theme mode to localStorage
+ * Saves theme mode to cookie
  * @param mode - Theme mode to save
  */
 export function saveThemeMode(mode: 'light' | 'dark' | 'system'): void {
-  try {
-    localStorage.setItem('parlant-theme-mode', mode);
-  } catch (error) {
-    console.error('Failed to save theme mode:', error);
-  }
+  saveStoredThemeMode(mode);
 }
 
 /**

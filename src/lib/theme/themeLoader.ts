@@ -1,12 +1,18 @@
 import type { ThemeConfig, CustomerThemeConfig } from './types';
 import { defaultTheme, themePresets } from './defaultThemes';
+import {
+  getStoredThemePreset,
+  saveStoredThemePreset,
+  getStoredThemeConfig,
+  saveStoredThemeConfig,
+  getStoredCustomerTheme,
+  saveStoredCustomerTheme,
+} from './cookieStorage';
 
 /**
- * Theme storage key for localStorage
+ * Default theme preset name
  */
-const THEME_STORAGE_KEY = 'parlant-theme-config';
-const CUSTOMER_THEME_STORAGE_KEY = 'parlant-customer-theme';
-const THEME_PRESET_KEY = 'parlant-theme-preset';
+const DEFAULT_THEME_PRESET = 'default';
 
 /**
  * Loads theme configuration from various sources
@@ -15,7 +21,7 @@ const THEME_PRESET_KEY = 'parlant-theme-preset';
  * @returns Theme configuration
  */
 export function loadTheme(customerId?: string): ThemeConfig {
-  // 1. Try to load customer-specific theme from localStorage
+  // 1. Try to load customer-specific theme from cookie
   if (customerId) {
     const customerTheme = loadCustomerTheme(customerId);
     if (customerTheme) {
@@ -23,13 +29,11 @@ export function loadTheme(customerId?: string): ThemeConfig {
     }
   }
 
-  // 2. Try to load theme preset from localStorage
+  // 2. Try to load theme preset from cookie (defaults to 'default' if not set)
   const presetName = getThemePreset();
-  if (presetName) {
-    const presetTheme = loadThemePreset(presetName);
-    if (presetTheme) {
-      return presetTheme;
-    }
+  const presetTheme = loadThemePreset(presetName);
+  if (presetTheme) {
+    return presetTheme;
   }
 
   // 3. Try to load from environment variables
@@ -38,7 +42,7 @@ export function loadTheme(customerId?: string): ThemeConfig {
     return envTheme;
   }
 
-  // 4. Try to load from localStorage (general theme)
+  // 4. Try to load from cookie (general theme)
   const storedTheme = loadStoredTheme();
   if (storedTheme) {
     return storedTheme;
@@ -49,37 +53,25 @@ export function loadTheme(customerId?: string): ThemeConfig {
 }
 
 /**
- * Loads customer-specific theme from localStorage
+ * Loads customer-specific theme from cookie
  * @param customerId - Customer ID
  * @returns Customer theme config or null
  */
 export function loadCustomerTheme(customerId: string): CustomerThemeConfig | null {
-  try {
-    const stored = localStorage.getItem(`${CUSTOMER_THEME_STORAGE_KEY}-${customerId}`);
-    if (stored) {
-      return JSON.parse(stored) as CustomerThemeConfig;
-    }
-  } catch (error) {
-    console.error('Failed to load customer theme:', error);
-  }
-  return null;
+  return getStoredCustomerTheme<CustomerThemeConfig>(customerId);
 }
 
 /**
- * Saves customer-specific theme to localStorage
+ * Saves customer-specific theme to cookie
  * @param customerId - Customer ID
  * @param theme - Theme configuration
  */
 export function saveCustomerTheme(customerId: string, theme: ThemeConfig): void {
-  try {
-    const config: CustomerThemeConfig = {
-      customerId,
-      theme,
-    };
-    localStorage.setItem(`${CUSTOMER_THEME_STORAGE_KEY}-${customerId}`, JSON.stringify(config));
-  } catch (error) {
-    console.error('Failed to save customer theme:', error);
-  }
+  const config: CustomerThemeConfig = {
+    customerId,
+    theme,
+  };
+  saveStoredCustomerTheme(customerId, config);
 }
 
 /**
@@ -119,56 +111,37 @@ function loadThemeFromEnv(): ThemeConfig | null {
 }
 
 /**
- * Loads theme from localStorage
+ * Loads theme from cookie
  * @returns Theme config or null
  */
 function loadStoredTheme(): ThemeConfig | null {
-  try {
-    const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored) as ThemeConfig;
-    }
-  } catch (error) {
-    console.error('Failed to load stored theme:', error);
-  }
-  return null;
+  return getStoredThemeConfig<ThemeConfig>();
 }
 
 /**
- * Saves theme to localStorage
+ * Saves theme to cookie
  * @param theme - Theme configuration
  */
 export function saveTheme(theme: ThemeConfig): void {
-  try {
-    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(theme));
-  } catch (error) {
-    console.error('Failed to save theme:', error);
-  }
+  saveStoredThemeConfig(theme);
 }
 
 /**
- * Gets the current theme preset name
- * @returns Theme preset name or null
+ * Gets the current theme preset name from cookie.
+ * Returns 'default' if no preset is stored.
+ * @returns Theme preset name (defaults to 'default')
  */
-export function getThemePreset(): string | null {
-  try {
-    return localStorage.getItem(THEME_PRESET_KEY);
-  } catch (error) {
-    console.error('Failed to load theme preset:', error);
-    return null;
-  }
+export function getThemePreset(): string {
+  const stored = getStoredThemePreset();
+  return stored || DEFAULT_THEME_PRESET;
 }
 
 /**
- * Saves the theme preset name
+ * Saves the theme preset name to cookie
  * @param presetName - Theme preset name
  */
 export function saveThemePreset(presetName: string): void {
-  try {
-    localStorage.setItem(THEME_PRESET_KEY, presetName);
-  } catch (error) {
-    console.error('Failed to save theme preset:', error);
-  }
+  saveStoredThemePreset(presetName);
 }
 
 /**

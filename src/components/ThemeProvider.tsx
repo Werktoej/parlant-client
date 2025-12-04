@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import type { ThemeConfig, ThemeMode } from '../lib/theme/types';
 import { loadTheme, getThemePreset, saveThemePreset, loadThemePreset } from '../lib/theme/themeLoader';
+import { migrateFromLocalStorage } from '../lib/theme/cookieStorage';
 import {
   applyThemeColors,
   applyThemeMode,
@@ -31,8 +32,8 @@ interface ThemeContextValue {
   mode: ThemeMode;
   /** Effective theme mode (resolved from system preference) */
   effectiveMode: 'light' | 'dark';
-  /** Current theme preset name */
-  themePreset: string | null;
+  /** Current theme preset name (defaults to 'default') */
+  themePreset: string;
   /** Function to set theme mode */
   setMode: (mode: ThemeMode) => void;
   /** Function to toggle between light and dark */
@@ -64,6 +65,12 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   customerId,
   initialMode,
 }) => {
+  // Migrate from localStorage to cookies on first run
+  // This must happen before any state initialization
+  if (typeof window !== 'undefined') {
+    migrateFromLocalStorage();
+  }
+
   const [theme, setTheme] = useState<ThemeConfig>(() => {
     const loadedTheme = loadTheme(customerId);
     // Apply theme immediately on initialization
@@ -77,7 +84,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   const [effectiveMode, setEffectiveMode] = useState<'light' | 'dark'>(() =>
     getEffectiveThemeMode()
   );
-  const [themePreset, setThemePresetState] = useState<string | null>(() => getThemePreset());
+  const [themePreset, setThemePresetState] = useState<string>(() => getThemePreset());
 
   /**
    * Applies theme colors based on current mode
@@ -179,15 +186,13 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     setTheme(loadedTheme);
     const effective = getEffectiveThemeMode();
     setEffectiveMode(effective);
-    
+
     // Update themePreset state to match the loaded theme
     const currentPreset = getThemePreset();
-    if (currentPreset && loadThemePreset(currentPreset)?.name === loadedTheme.name) {
+    if (loadThemePreset(currentPreset)?.name === loadedTheme.name) {
       setThemePresetState(currentPreset);
-    } else if (!currentPreset) {
-      setThemePresetState(null);
     }
-    
+
     applyTheme(loadedTheme, effective);
   }, [customerId, applyTheme]);
 

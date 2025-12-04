@@ -188,20 +188,57 @@ function App() {
   // Get selected agent details
   const selectedAgent = availableAgents.find(agent => agent.id === agentId)
   
-  // Get current theme to check if purple theme is active
+  // Get current theme to generate appropriate gradients
   const { themePreset, effectiveMode } = useTheme()
-  const isPurpleTheme = themePreset === 'purple'
-  const isPurpleDark = isPurpleTheme && effectiveMode === 'dark'
+  
+  /**
+   * Generates gradient colors based on theme and mode
+   * Each theme has its own primary hue that creates beautiful gradients
+   */
+  const getThemeGradients = (): { diagonal: string; radial: string } | null => {
+    // Theme hue values (based on primary colors in defaultThemes.ts)
+    const themeHues: Record<string, number> = {
+      default: 220,     // Slate blue
+      ocean: 185,       // Teal/cyan
+      sunset: 15,       // Coral/orange
+      purple: 270,      // Violet
+      petroleum: 217,   // Petroleum blue
+    }
+    
+    const hue = themeHues[themePreset] ?? 220
+    
+    if (effectiveMode === 'dark') {
+      // Dark mode: dramatic, deep gradients with vibrant center
+      return {
+        diagonal: `linear-gradient(to bottom right, hsl(${hue}, 65%, 10%), hsl(${hue}, 60%, 25%), hsl(${hue}, 65%, 10%))`,
+        radial: `radial-gradient(ellipse at 50% 50%, hsl(${hue}, 80%, 35%), hsl(${hue}, 50%, 15%) 70%)`
+      }
+    } else {
+      // Light mode: subtle, soft gradients with elegant feel
+      return {
+        diagonal: `linear-gradient(to bottom right, hsl(${hue}, 30%, 96%), hsl(${hue}, 40%, 90%), hsl(${hue}, 30%, 96%))`,
+        radial: `radial-gradient(ellipse at 50% 50%, hsl(${hue}, 50%, 95%), hsl(${hue}, 25%, 98%) 70%)`
+      }
+    }
+  }
+  
+  const gradients = getThemeGradients()
 
   return (
     <div className="h-screen w-screen bg-background overflow-hidden relative">
-      {/* Beautiful purple gradient overlays - only for purple theme in dark mode */}
-      {isPurpleDark && (
+      {/* Beautiful gradient overlays - adapts to all themes and modes */}
+      {gradients && (
         <>
-          {/* Diagonal gradient - darker at corners, lighter vibrant purple in center */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(270,65%,10%)] via-[hsl(270,60%,25%)] to-[hsl(270,65%,10%)] pointer-events-none"></div>
-          {/* Radial gradient - vibrant purple center, darker edges - matches beautiful gradient */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,hsl(270,80%,35%),hsl(270,50%,15%)_70%)] pointer-events-none"></div>
+          {/* Diagonal gradient - creates depth with darker corners, lighter center */}
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: gradients.diagonal }}
+          />
+          {/* Radial gradient - adds vibrant center, creates atmospheric depth */}
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: gradients.radial }}
+          />
         </>
       )}
 
