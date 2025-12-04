@@ -101,7 +101,7 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({
               <span className="text-xs font-medium text-muted-foreground">
                 {agentName}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs font-medium text-muted-foreground/70">
                 {new Date().toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit'
@@ -141,7 +141,7 @@ export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({
               <span className="text-xs font-medium text-muted-foreground">
                 {agentName}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs font-medium text-muted-foreground/70">
                 {new Date().toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit'
