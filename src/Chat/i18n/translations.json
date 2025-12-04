@@ -58,6 +58,9 @@
       "defaultTitle": "Samtale",
       "guest": "Gæst"
     },
+    "message": {
+      "you": "Dig"
+    },
     "settings": {
       "title": "Indstillinger",
       "agent": "Agent",
@@ -141,6 +144,9 @@
     "session": {
       "defaultTitle": "Conversation",
       "guest": "Guest"
+    },
+    "message": {
+      "you": "You"
     },
     "settings": {
       "title": "Settings",

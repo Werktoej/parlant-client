@@ -24,7 +24,7 @@ const themeDisplayNames: Record<string, string> = {
   ocean: 'Ocean',
   sunset: 'Sunset',
   purple: 'Purple',
-  star: 'STAR',
+  petroleum: 'Petroleum',
 };
 
 /**
@@ -35,7 +35,7 @@ const themeDescriptions: Record<string, string> = {
   ocean: 'Calm ocean blue',
   sunset: 'Warm orange to pink',
   purple: 'Elegant violet & gold',
-  star: 'Danish government style',
+  petroleum: 'Petroleum industry style',
 };
 
 /**
@@ -85,7 +85,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
       ocean: 'bg-gradient-to-r from-cyan-500 to-blue-500',
       sunset: 'bg-gradient-to-r from-orange-500 to-pink-500',
       purple: 'bg-gradient-to-r from-purple-600 via-purple-500 to-purple-700',
-      star: 'bg-gradient-to-r from-blue-600 to-red-600',
+      petroleum: 'bg-gradient-to-r from-blue-600 to-red-600',
     };
     
     return (
@@ -183,7 +183,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                   ocean: 'bg-gradient-to-r from-cyan-500 to-blue-500',
                   sunset: 'bg-gradient-to-r from-orange-500 to-pink-500',
                   purple: 'bg-gradient-to-r from-purple-600 via-purple-500 to-purple-700',
-                  star: 'bg-gradient-to-r from-blue-600 to-red-600',
+                  petroleum: 'bg-gradient-to-r from-blue-600 to-red-600',
                 };
                 
                 const isSelected = themePreset === presetName;

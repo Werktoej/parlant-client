@@ -1,4 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+/**
+ * ParlantChatBot - Main chatbot component
+ * Follows ADR principles:
+ * - ADR-001: Complexity Management - Uses hooks for state management
+ * - ADR-004: Separation of Concerns - Logic in hooks, presentation in components
+ * - ADR-007: Loose Coupling - Self-contained with QueryClientProvider
+ */
+
+import React, { useEffect, useMemo, useCallback } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ChatWindow } from './ChatWindow';
@@ -6,6 +14,8 @@ import { FullScreenChatbot } from './FullScreenChatbot';
 import { setLoggingEnabled, log, logWarn, logError } from '../utils/logger';
 import { useCustomerInfo } from '../hooks/useCustomerInfo';
 import { useSessionWelcomeTracking } from '../hooks/useSessionWelcomeTracking';
+import { useChatDisplayMode } from '../hooks/useChatDisplayMode';
+import { useChatSessionState } from '../hooks/useChatSessionState';
 import { parseJWT, isJWTExpired } from '../utils/jwt';
 import type { Language } from '../hooks/useTranslation';
 import type { PollingConfig } from '../types/chat';
@@ -54,8 +64,21 @@ export interface ParlantChatBotProps {
   welcomeMessages?: Record<'da' | 'en', string>;
 }
 
-// Create a shared QueryClient instance
-const defaultQueryClient = new QueryClient();
+/**
+ * Creates a QueryClient instance for the chatbot
+ * This ensures the chatbot is self-contained and doesn't depend on external QueryClient
+ */
+const createQueryClient = (): QueryClient => {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        retry: 1,
+        staleTime: 5 * 60 * 1000 // 5 minutes
+      }
+    }
+  });
+};
 
 /**
  * ParlantChatBot - A complete, self-contained chatbot component
@@ -132,61 +155,47 @@ export const ParlantChatBot: React.FC<ParlantChatBotProps> = ({
     }
   }, [authToken, enableLogging]);
 
-  // Extract customer info using custom hook (DRY principle)
+  // Create QueryClient instance (memoized per component instance)
+  const queryClient = useMemo(() => createQueryClient(), []);
+
+  // Extract customer info using custom hook
   const customerInfo = useCustomerInfo({
     propCustomerId,
     propCustomerName,
     authToken,
-    authProvider,
+    authProvider
   });
 
-  // Track welcome message state using custom hook (DRY principle)
+  // Track welcome message state using custom hook
   const { markWelcomeShown, hasShownWelcome: hasSessionShownWelcome } = useSessionWelcomeTracking();
 
-  // Chat state management
-  const [isChatEnabled, setIsChatEnabled] = useState<boolean>(autoStartSession);
-  const [isChatMinimized, setIsChatMinimized] = useState<boolean>(initialMode === 'minimized');
-  const [isFullScreen, setIsFullScreen] = useState<boolean>(initialMode === 'fullscreen');
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [sessionKey, setSessionKey] = useState<number>(0);
+  // Display mode management hook
+  const {
+    isChatEnabled,
+    isChatMinimized,
+    isFullScreen,
+    minimizeChat: handleMinimizeChat,
+    restoreChat: handleRestoreChat,
+    expandToFullscreen: handleExpand,
+    contractFromFullscreen: handleContract
+  } = useChatDisplayMode({
+    initialMode,
+    forceMinimize,
+    onDisplayModeChange,
+    onClose
+  });
 
-  // Minimize chat when forceMinimize prop is true
-  useEffect(() => {
-    if (forceMinimize) {
-      setIsChatMinimized(true);
-      setIsFullScreen(false);
-    }
-  }, [forceMinimize]);
-
-  // Clear session and messages when agent or customer changes
-  useEffect(() => {
-    if (currentSessionId) {
-      log('Agent or customer changed - clearing session and message history', {
-        agentId,
-        customerId: customerInfo.customerId
-      });
-      setCurrentSessionId(null);
-      setSessionKey(prev => prev + 1); // Force re-mount of chat components
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentId, customerInfo.customerId]);
-
-  /**
-   * Handles when a new session is created
-   */
-  const handleSessionCreated = useCallback((sessionId: string) => {
-    setCurrentSessionId(sessionId);
-    onSessionCreated?.(sessionId);
-    log('Session created:', sessionId);
-  }, [onSessionCreated]);
-
-  /**
-   * Handles updating session (including clearing)
-   */
-  const handleSessionUpdate = useCallback((sessionId: string | null) => {
-    setCurrentSessionId(sessionId);
-    log('Session updated:', sessionId);
-  }, []);
+  // Session state management hook
+  const {
+    currentSessionId,
+    sessionKey,
+    handleSessionCreated,
+    handleSessionUpdate
+  } = useChatSessionState({
+    agentId,
+    customerId: customerInfo.customerId,
+    onSessionCreated
+  });
 
   /**
    * Handles when the welcome message is shown
@@ -198,46 +207,9 @@ export const ParlantChatBot: React.FC<ParlantChatBotProps> = ({
     }
   }, [currentSessionId, markWelcomeShown]);
 
-  /**
-   * Minimizes the chat
-   */
-  const handleMinimizeChat = useCallback(() => {
-    setIsChatMinimized(true);
-    setIsFullScreen(false);
-    onClose?.();
-    onDisplayModeChange?.('minimized');
-  }, [onClose, onDisplayModeChange]);
-
-  /**
-   * Restores the chat from minimized state
-   */
-  const handleRestoreChat = useCallback(() => {
-    setIsChatMinimized(false);
-    setIsChatEnabled(true);
-    onDisplayModeChange?.('popup');
-  }, [onDisplayModeChange]);
-
-  /**
-   * Expands to full screen
-   */
-  const handleExpand = useCallback(() => {
-    log(`Expanding to fullscreen with session: ${currentSessionId}`);
-    setIsFullScreen(true);
-    onDisplayModeChange?.('fullscreen');
-  }, [currentSessionId, onDisplayModeChange]);
-
-  /**
-   * Contracts from full screen
-   */
-  const handleContract = useCallback(() => {
-    log(`Contracting to popup with session: ${currentSessionId}`);
-    setIsFullScreen(false);
-    onDisplayModeChange?.('popup');
-  }, [currentSessionId, onDisplayModeChange]);
-
 
   return (
-    <QueryClientProvider client={defaultQueryClient}>
+    <QueryClientProvider client={queryClient}>
       {/* Popup Chat Window */}
       {isChatEnabled && !isChatMinimized && !isFullScreen && (
         <div

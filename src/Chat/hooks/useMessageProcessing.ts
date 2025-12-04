@@ -40,6 +40,7 @@ interface StatusEventData {
  * Interface for pending message
  */
 export interface PendingMessage {
+  id?: string;
   kind: string;
   source: string;
   creationUtc: Date;
@@ -47,6 +48,7 @@ export interface PendingMessage {
   offset: number;
   correlationId: string;
   data: { message: string };
+  status: null;
 }
 
 /**
@@ -88,6 +90,7 @@ export const useMessageProcessing = ({
     offset: 0,
     correlationId: '',
     data: { message: '' },
+    status: null,
   });
 
   // Group events by correlation ID
@@ -197,6 +200,7 @@ export const useMessageProcessing = ({
       offset: 0,
       correlationId: '',
       data: { message: '' },
+      status: null,
     });
   }, []);
 
@@ -220,6 +224,7 @@ export const useMessageProcessing = ({
       offset: Date.now(),
       correlationId: `temp-${Date.now()}`,
       data: { message: content },
+      status: null,
     });
   }, [setPendingMessage]);
 

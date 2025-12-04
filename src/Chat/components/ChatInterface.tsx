@@ -1,52 +1,18 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Send, Loader2, AlertCircle } from 'lucide-react';
-import { ParlantClient } from 'parlant-client';
-import type { EventCreationParams } from 'parlant-client/src/api';
+/**
+ * ChatInterface - Container component for chat functionality
+ * Follows ADR-004: Separation of Concerns - Composes presentation and logic layers
+ */
+
+import React, { useEffect, useRef, useCallback } from 'react';
 import { useTranslation, type Language } from '../hooks/useTranslation';
 import { useEventPolling, type PollingConfig } from '../hooks/useEventPolling';
 import { useMessageProcessing } from '../hooks/useMessageProcessing';
-import { WelcomeMessage } from './WelcomeMessage';
-import { log, logWarn, logError } from '../utils/logger';
-
-/**
- * Session data structure for creating sessions
- */
-interface SessionData {
-  agent_id: string;
-  allow_greeting: boolean;
-  title: string;
-  created_at: string;
-  updated_at: string;
-  customer_id?: string;
-}
-
-/**
- * Message data structure
- */
-interface MessageData {
-  message?: string;
-  participant?: {
-    display_name?: string;
-  };
-}
-
-/**
- * Extended message interface for rendering
- */
-interface DisplayMessage {
-  id?: string;
-  kind: string;
-  source: string;
-  creationUtc: Date;
-  offset: number;
-  correlationId: string;
-  data: MessageData;
-  status?: string | null;
-  error?: string;
-  isStatusMessage?: boolean;
-  serverStatus?: string;
-  created_at?: string;
-}
+import { useChatSession } from '../hooks/useChatSession';
+import { useChatMessaging } from '../hooks/useChatMessaging';
+import { ErrorDisplay } from './ErrorDisplay';
+import { MessagesList } from './MessagesList';
+import { ChatInput } from './ChatInput';
+import { logError } from '../utils/logger';
 
 /**
  * Props for the shared ChatInterface component
@@ -87,6 +53,11 @@ interface ChatInterfaceProps {
 /**
  * Shared chat interface component that handles all chat functionality.
  * Can be used in both popup and full-screen modes.
+ * 
+ * Follows ADR principles:
+ * - ADR-001: Complexity Management - Uses smaller sub-components
+ * - ADR-004: Separation of Concerns - Logic in hooks, presentation in components
+ * - ADR-007: Loose Coupling - Uses dependency injection via props
  */
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   serverUrl,
@@ -105,17 +76,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   showAttribution = true,
   welcomeMessages
 }) => {
-  const [sessionId, setSessionId] = useState<string | null>(externalSessionId || null);
-  const [inputMessage, setInputMessage] = useState<string>('');
-  const [error, setError] = useState<string>('');
-  const [isCreatingSession, setIsCreatingSession] = useState<boolean>(false);
-  const [hasSimulatedWelcome, setHasSimulatedWelcome] = useState<boolean>(parentHasShownWelcome || false);
-  const [showWelcomeMessage, setShowWelcomeMessage] = useState<boolean>(false);
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const sessionCreatedRef = useRef<boolean>(false);
   const previousMessageCountRef = useRef<number>(0);
 
   // Translation hook
@@ -124,10 +86,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Use translated agent name if not provided
   const displayAgentName = agentName || t('agent.defaultName');
 
-  // Create ParlantClient instance (memoized to avoid recreation)
-  const parlantClient = useMemo(() => new ParlantClient({
-    environment: serverUrl,
-  }), [serverUrl]);
+  // Session management hook
+  const {
+    sessionId,
+    isCreatingSession,
+    error: sessionError,
+    createSession,
+    setError: setSessionError
+  } = useChatSession({
+    serverUrl,
+    agentId,
+    customerId,
+    authToken,
+    externalSessionId,
+    onSessionCreated
+  });
 
   // Message processing hook
   const {
@@ -152,9 +125,28 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     onEventsReceived: processEvents,
     onError: (errorMsg: string) => {
       logError('Event polling error:', errorMsg);
-      setError(errorMsg);
+      setSessionError(errorMsg);
     }
   });
+
+  // Messaging hook
+  const {
+    inputMessage,
+    setInputMessage,
+    sendMessage: sendMessageBase,
+    handleKeyPress
+  } = useChatMessaging({
+    serverUrl,
+    sessionId,
+    authToken,
+    createSession
+  });
+
+  // Welcome message state
+  const [hasSimulatedWelcome, setHasSimulatedWelcome] = React.useState<boolean>(
+    parentHasShownWelcome || false
+  );
+  const [showWelcomeMessage, setShowWelcomeMessage] = React.useState<boolean>(false);
 
   /**
    * Scrolls to the bottom of the messages container
@@ -187,177 +179,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }, [scrollToNewMessage, messages.length, scrollToBottom]);
 
   /**
-   * Creates a new session
-   */
-  const createSession = useCallback(async (message?: EventCreationParams): Promise<void> => {
-    if (isCreatingSession) return;
-
-    try {
-      setIsCreatingSession(true);
-      setError('');
-
-      const now = new Date();
-      const sessionData: SessionData = {
-        agent_id: agentId,
-        allow_greeting: false,
-        title: `Chat Session ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
-        created_at: now.toISOString(),
-        updated_at: now.toISOString()
-      };
-
-      if (customerId && customerId.trim()) {
-        try {
-          log('Creating session for customer:', customerId.trim());
-          const customers = await parlantClient.customers.list();
-          log('Available customers:', customers);
-
-          const existingCustomer = customers.find(c => c.name === customerId.trim());
-
-          if (existingCustomer) {
-            log('Found existing customer:', existingCustomer);
-            sessionData.customer_id = existingCustomer.id;
-          } else {
-            log('Creating new customer:', customerId.trim());
-            const newCustomer = await parlantClient.customers.create({
-              name: customerId.trim(),
-              tags: []
-            });
-            log('Created new customer:', newCustomer);
-            sessionData.customer_id = newCustomer.id;
-          }
-
-          log('Session data with customer_id:', sessionData);
-        } catch (customerError: unknown) {
-          logWarn('Failed to handle customer, proceeding with guest session:', customerError);
-          // Continue without customerId - creates guest session
-        }
-      } else {
-        log('No customer ID provided, creating guest session');
-      }
-
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-        log('Using auth token for session creation');
-      }
-
-      const response = await fetch(`${serverUrl}/sessions`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(sessionData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-
-        // Provide specific error messages for auth failures
-        if (response.status === 401) {
-          throw new Error('Authentication failed: Invalid or expired token. Please log in again.');
-        }
-        if (response.status === 403) {
-          throw new Error('Access denied: You do not have permission to create sessions.');
-        }
-
-        throw new Error(`HTTP ${response.status}: ${JSON.stringify(errorData)}`);
-      }
-
-      const newSession = await response.json();
-
-      if (!newSession?.id) {
-        throw new Error('Session was not created - no ID returned');
-      }
-
-      setSessionId(newSession.id);
-      setHasSimulatedWelcome(false); // Reset welcome state for new session
-      setShowWelcomeMessage(false); // Reset welcome message display
-      onSessionCreated?.(newSession.id);
-
-      if (message) {
-        const messageHeaders: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-
-        if (authToken) {
-          messageHeaders['Authorization'] = `Bearer ${authToken}`;
-        }
-
-        const messageResponse = await fetch(`${serverUrl}/sessions/${newSession.id}/events`, {
-          method: 'POST',
-          headers: messageHeaders,
-          body: JSON.stringify(message),
-        });
-
-        if (!messageResponse.ok) {
-          const errorData = await messageResponse.json();
-          logWarn('Failed to send initial message:', errorData);
-        }
-      }
-
-      setIsCreatingSession(false);
-
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-
-    } catch (error) {
-      const errorMessage = `Failed to create session: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      logError(errorMessage, error);
-      setError(errorMessage);
-      setIsCreatingSession(false);
-      throw error;
-    }
-  }, [agentId, customerId, serverUrl, parlantClient.customers, isCreatingSession, onSessionCreated, authToken]);
-
-  /**
-   * Sends a message
-   */
-  const postMessage = useCallback(async (content: string): Promise<void> => {
-    if (!content.trim()) return;
-
-    const message: EventCreationParams = {
-      kind: 'message',
-      message: content,
-      source: 'customer',
-    };
-
-    if (sessionId) {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-
-      const response = await fetch(`${serverUrl}/sessions/${sessionId}/events`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(message),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-
-        // Provide specific error messages for auth failures
-        if (response.status === 401) {
-          throw new Error('Authentication failed: Invalid or expired token. Please log in again.');
-        }
-        if (response.status === 403) {
-          throw new Error('Access denied: You do not have permission to send messages.');
-        }
-
-        throw new Error(`Failed to send message: HTTP ${response.status}: ${JSON.stringify(errorData)}`);
-      }
-    } else {
-      await createSession(message);
-    }
-  }, [sessionId, serverUrl, createSession, authToken]);
-
-  /**
-   * Sends a message from the input field
+   * Wraps sendMessage to include pending message handling
    */
   const sendMessage = useCallback(async (): Promise<void> => {
     if (!inputMessage.trim()) return;
@@ -376,25 +198,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }, 10);
 
     try {
-      await postMessage(messageText);
+      await sendMessageBase();
       // Trigger immediate poll to get bot response quickly
       triggerImmediatePoll();
     } catch (error) {
       logError('Failed to send message:', error);
-      setError(`Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setSessionError(`Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`);
       clearPendingMessage();
     }
-  }, [inputMessage, postMessage, updateLastUserMessageTime, addPendingMessage, clearPendingMessage, triggerImmediatePoll]);
+  }, [inputMessage, sendMessageBase, updateLastUserMessageTime, addPendingMessage, clearPendingMessage, triggerImmediatePoll, setSessionError]);
 
-  /**
-   * Handles key press events in the input field
-   */
-  const handleKeyPress = useCallback((event: React.KeyboardEvent<HTMLInputElement>): void => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      sendMessage();
-    }
-  }, [sendMessage]);
 
   /**
    * Formats timestamp for display
@@ -406,36 +219,27 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   /**
    * Gets the display name for a message source
    */
-  const getSourceDisplayName = useCallback((source: string, participantName?: string): string => {
-    switch (source) {
-      case 'customer':
-        return 'You';
-      case 'ai_agent':
-        return participantName || displayAgentName;
-      case 'human_agent':
-        return participantName || displayAgentName;
-      default:
-        return source;
-    }
-  }, [displayAgentName]);
+  const getSourceDisplayName = useCallback(
+    (source: string, participantName?: string): string => {
+      switch (source) {
+        case 'customer':
+          return customerName || t('message.you');
+        case 'ai_agent':
+          return participantName || displayAgentName;
+        case 'human_agent':
+          return participantName || displayAgentName;
+        default:
+          return source;
+      }
+    },
+    [displayAgentName, customerName, t]
+  );
 
-  // Component lifecycle logging
-  useEffect(() => {
-    log('ChatInterface mounted with sessionId:', externalSessionId || 'none');
-    return () => {
-      log('ChatInterface unmounting');
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps - only run on mount/unmount
-
-  // Handle external sessionId changes
+  // Handle external sessionId changes - reset welcome state
   useEffect(() => {
     if (externalSessionId && externalSessionId !== sessionId) {
-      log('Loading existing session:', externalSessionId);
-      setSessionId(externalSessionId);
-      sessionCreatedRef.current = true; // Mark as having a session
-      setHasSimulatedWelcome(false); // Reset welcome state for new session
-      setShowWelcomeMessage(false); // Reset welcome message display
+      setHasSimulatedWelcome(false);
+      setShowWelcomeMessage(false);
     }
   }, [externalSessionId, sessionId]);
 
@@ -443,15 +247,23 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
    * Effect to show welcome message when chat starts
    */
   useEffect(() => {
-    if (sessionId && messages.length === 0 && !hasSimulatedWelcome && !isCreatingSession && !parentHasShownWelcome) {
+    if (
+      sessionId &&
+      messages.length === 0 &&
+      !hasSimulatedWelcome &&
+      !isCreatingSession &&
+      !parentHasShownWelcome
+    ) {
       setShowWelcomeMessage(true);
       setHasSimulatedWelcome(true);
-      log('Showing welcome message for session:', sessionId);
-    }
-    // Also show welcome message if parent has shown welcome but we haven't displayed it yet
-    else if (sessionId && messages.length === 0 && !showWelcomeMessage && parentHasShownWelcome && !isCreatingSession) {
+    } else if (
+      sessionId &&
+      messages.length === 0 &&
+      !showWelcomeMessage &&
+      parentHasShownWelcome &&
+      !isCreatingSession
+    ) {
       setShowWelcomeMessage(true);
-      log('Restoring welcome message display for session:', sessionId);
     }
   }, [sessionId, messages.length, hasSimulatedWelcome, isCreatingSession, parentHasShownWelcome, showWelcomeMessage]);
 
@@ -464,20 +276,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       scrollToBottom();
     }, 100);
   }, [scrollToBottom, onWelcomeShown]);
-
-  useEffect(() => {
-    if (!sessionId && !isCreatingSession && !sessionCreatedRef.current && !externalSessionId) {
-      sessionCreatedRef.current = true;
-      
-      // Create session without sending an initial message
-      // The welcome message is displayed locally via WelcomeMessage component
-      // and should NOT be submitted to the backend
-      createSession().catch(error => {
-        logError('Failed to create session on mount:', error);
-        sessionCreatedRef.current = false;
-      });
-    }
-  }, [externalSessionId, sessionId, isCreatingSession, createSession]);
 
   useEffect(() => {
     scrollToBottomIfNewMessages();
@@ -496,19 +294,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   return (
     <div className="flex flex-col h-full">
       {/* Error Display */}
-      {error && (
-        <div className="bg-destructive text-destructive-foreground border-b border-destructive px-3 sm:px-6 py-2 sm:py-3">
-          <div className="flex items-center space-x-2">
-            <AlertCircle size={14} className="sm:w-4 sm:h-4 text-destructive flex-shrink-0" />
-            <span className="text-destructive text-xs sm:text-sm truncate">{error}</span>
-            <button
-              onClick={() => setError('')}
-              className="ml-auto text-destructive-foreground hover:text-destructive-foreground flex-shrink-0"
-            >
-              ×
-            </button>
-          </div>
-        </div>
+      {sessionError && (
+        <ErrorDisplay message={sessionError} onDismiss={() => setSessionError('')} />
       )}
 
       {/* Messages Area */}
@@ -516,150 +303,36 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 bg-background scrollbar-thin scrollbar-thumb-muted scrollbar-track-background"
       >
-        {isCreatingSession ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center space-y-4">
-              <Loader2 size={32} className="animate-spin text-primary mx-auto" />
-              <p className="text-muted-foreground">{t('status.connecting', { agentName: displayAgentName })}</p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-3 sm:space-y-4">
-            {/* Welcome Message */}
-            {showWelcomeMessage && (
-              <WelcomeMessage
-                agentName={displayAgentName}
-                customerName={customerName}
-                language={language}
-                onMessageAppear={handleWelcomeMessageAppear}
-                delay={1000}
-                skipAnimation={parentHasShownWelcome}
-                customWelcomeText={welcomeMessages?.[language]}
-              />
-            )}
-
-            {/* Regular Messages */}
-            {messages.length > 0 && (
-              [...messages,
-              // Add pending message if it exists
-              ...(pendingMessage?.data && pendingMessage.data.message
-                ? [pendingMessage as DisplayMessage]
-                : []),
-              // Add status message if it exists
-              ...(statusMessage ? [statusMessage as DisplayMessage] : [])
-              ].map((message, index) => (
-                <div
-                  key={message.id || index}
-                  className={`flex ${message.source === 'customer' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[90%] sm:max-w-[80%] rounded-lg sm:rounded-lg p-3 sm:p-4 lg:p-5 shadow-lg ${message.source === 'customer'
-                      ? (message.serverStatus === 'pending'
-                        ? 'bg-muted text-muted-foreground rounded-br-lg border-[0.5px] border-primary/50'
-                        : 'bg-primary text-primary-foreground rounded-br-lg')
-                      : message.source === 'human_agent'
-                        ? 'bg-accent text-accent-foreground rounded-bl-lg'
-                        : 'bg-card border-[0.5px] border-border/50 text-card-foreground rounded-bl-lg'
-                      }`}
-                  >
-                    {/* Message Header for non-customer messages */}
-                    {message.source !== 'customer' && (
-                      <div className="flex items-center justify-between mb-1 sm:mb-2">
-                        <span className={`text-xs font-medium pr-2 sm:pr-4 truncate ${message.source === 'human_agent' ? 'text-accent-foreground' : 'text-muted-foreground'
-                          }`}>
-                          {getSourceDisplayName(message.source, (message.data as MessageData)?.participant?.display_name)}
-                        </span>
-                        <span className={`text-xs flex-shrink-0 ${message.source === 'human_agent' ? 'text-accent-foreground/70' : 'text-muted-foreground'
-                          }`}>
-                          {formatTimestamp(new Date(message.created_at || message.creationUtc || Date.now()))}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Message Content */}
-                    <div className="leading-relaxed font-medium whitespace-pre-wrap text-sm sm:text-base">
-                      {message.isStatusMessage ? (
-                        <div className="flex items-center space-x-3">
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                          </div>
-                          <span className="text-muted-foreground font-medium">
-                            {(message.data as MessageData)?.message || ''}
-                          </span>
-                        </div>
-                      ) : (
-                        (message.data as MessageData)?.message || ''
-                      )}
-                    </div>
-
-                    {/* Timestamp for customer messages */}
-                    {message.source === 'customer' && (
-                      <div className="text-xs text-primary-foreground/70 mt-1 sm:mt-2 text-right flex items-center justify-end space-x-1">
-                        <span>
-                          {formatTimestamp(new Date(message.created_at || message.creationUtc || Date.now()))}
-                        </span>
-                        {message.serverStatus === 'pending' && (
-                          <div className="flex space-x-1">
-                            <div className="w-1 h-1 bg-primary-foreground rounded-full animate-pulse"></div>
-                            <div className="w-1 h-1 bg-primary-foreground rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
-                            <div className="w-1 h-1 bg-primary-foreground rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-
-            <div ref={messagesEndRef} />
-          </div>
-        )}
+        <MessagesList
+          messages={messages}
+          pendingMessage={pendingMessage}
+          statusMessage={statusMessage}
+          isCreatingSession={isCreatingSession}
+          showWelcomeMessage={showWelcomeMessage}
+          agentName={displayAgentName}
+          customerName={customerName}
+          language={language}
+          onWelcomeMessageAppear={handleWelcomeMessageAppear}
+          hasShownWelcome={parentHasShownWelcome ?? false}
+          welcomeMessages={welcomeMessages}
+          getSourceDisplayName={getSourceDisplayName}
+          formatTimestamp={formatTimestamp}
+          t={t}
+        />
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}
-      <div className="bg-card border-t border-border p-2 sm:p-3 m-1 sm:m-2 rounded-md">
-        <div className="flex items-center space-x-2 sm:space-x-3">
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={sessionId ? t('input.placeholder') : t('input.placeholderConnecting')}
-            disabled={!sessionId || isCreatingSession}
-            className="flex-1 h-12 bg-background border border-input focus:border-ring text-foreground placeholder-muted-foreground rounded-md px-4 text-sm transition-all duration-200 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
-          />
-          <button
-            onClick={sendMessage}
-            disabled={!inputMessage.trim() || !sessionId || isCreatingSession}
-            className="w-12 h-12 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground rounded-md transition-all duration-200 flex items-center justify-center flex-shrink-0"
-          >
-            {showInfo ? (
-              <Loader2 size={20} className="animate-spin" />
-            ) : (
-              <Send size={20} />
-            )}
-          </button>
-        </div>
-
-        {/* Powered by Parlant attribution */}
-        {showAttribution && (
-          <div className="flex items-center justify-center mt-2 sm:mt-3">
-            <a
-              href="https://www.parlant.io/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 flex items-center space-x-1"
-            >
-              <span>Powered by</span>
-              <span className="font-semibold">Parlant</span>
-            </a>
-          </div>
-        )}
-      </div>
+      <ChatInput
+        value={inputMessage}
+        onChange={setInputMessage}
+        onSend={sendMessage}
+        onKeyPress={handleKeyPress}
+        placeholder={sessionId ? t('input.placeholder') : t('input.placeholderConnecting')}
+        disabled={!sessionId || isCreatingSession}
+        isLoading={showInfo}
+        showAttribution={showAttribution}
+      />
     </div>
   );
 };

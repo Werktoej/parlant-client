@@ -129,5 +129,5 @@ Available preset themes:
 - `forest` - Natural green theme
 - `royal` - Elegant purple theme
 - `purple` - Beautiful dark purple gradient theme
-- `star` - STAR theme (Danish government style with blue and red accents)
+- `petroleum` - Petroleum theme with blue and red accents
 

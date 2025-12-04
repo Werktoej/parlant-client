@@ -236,13 +236,13 @@ export const themePresets: Record<string, ThemeConfig> = {
   },
 
   /**
-   * STAR Theme - Danish government official colors
-   * Primary: STAR Blue (#4064a5)
-   * Accent: STAR Red (#a11238)
-   * Professional, trustworthy, official
+   * Petroleum Theme - Industry-inspired professional colors
+   * Primary: Petroleum Blue (#4064a5)
+   * Accent: Petroleum Red (#a11238)
+   * Professional, trustworthy, industrial
    */
-  star: {
-    name: 'star',
+  petroleum: {
+    name: 'petroleum',
     light: {
       background: '0 0% 99%',
       foreground: '220 15% 10%',
@@ -250,13 +250,13 @@ export const themePresets: Record<string, ThemeConfig> = {
       'card-foreground': '220 15% 10%',
       popover: '0 0% 100%',
       'popover-foreground': '220 15% 10%',
-      primary: '217 44% 45%',         // STAR Blue #4064a5
+      primary: '217 44% 45%',         // Petroleum Blue #4064a5
       'primary-foreground': '0 0% 100%',
       secondary: '220 10% 94%',
       'secondary-foreground': '220 15% 10%',
       muted: '220 10% 96%',
       'muted-foreground': '220 10% 45%',
-      accent: '345 82% 35%',          // STAR Red #a11238
+      accent: '345 82% 35%',          // Petroleum Red #a11238
       'accent-foreground': '0 0% 100%',
       destructive: '345 82% 35%',
       'destructive-foreground': '0 0% 100%',
@@ -272,13 +272,13 @@ export const themePresets: Record<string, ThemeConfig> = {
       'card-foreground': '0 0% 98%',
       popover: '220 22% 11%',
       'popover-foreground': '0 0% 98%',
-      primary: '217 50% 55%',         // Lighter STAR Blue
+      primary: '217 50% 55%',         // Lighter Petroleum Blue
       'primary-foreground': '0 0% 100%',
       secondary: '220 18% 18%',
       'secondary-foreground': '0 0% 98%',
       muted: '220 18% 16%',
       'muted-foreground': '220 10% 65%',
-      accent: '345 75% 50%',          // Lighter STAR Red
+      accent: '345 75% 50%',          // Lighter Petroleum Red
       'accent-foreground': '0 0% 100%',
       destructive: '345 75% 50%',
       'destructive-foreground': '0 0% 100%',
