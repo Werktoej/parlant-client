@@ -209,12 +209,19 @@ const SimpleDropdown: React.FC<SimpleDropdownProps> = ({
   onChange,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const selectedOption = options.find(o => o.value === value);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        buttonRef.current && 
+        dropdownRef.current && 
+        !buttonRef.current.contains(event.target as Node) &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -224,14 +231,27 @@ const SimpleDropdown: React.FC<SimpleDropdownProps> = ({
     }
   }, [isOpen]);
 
+  // Calculate dropdown position when opening
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8, // 8px gap (mt-2)
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, [isOpen]);
+
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           'w-full px-4 pr-10 py-3 bg-background border border-input rounded-md text-left transition-all duration-200 text-sm cursor-pointer hover:border-ring focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring',
-          isOpen && 'ring-2 ring-ring border-ring'
+          isOpen && 'ring-2 ring-ring border-ring relative z-[100]'
         )}
       >
         <span className="text-foreground">{selectedOption?.label || 'Select...'}</span>
@@ -251,7 +271,15 @@ const SimpleDropdown: React.FC<SimpleDropdownProps> = ({
             className="fixed inset-0 z-[99] bg-black/5 backdrop-blur-[2px]" 
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute z-[100] w-full mt-2 bg-popover border border-border rounded-md shadow-2xl overflow-hidden">
+          <div 
+            ref={dropdownRef}
+            className="fixed z-[100] bg-popover border border-border rounded-md shadow-2xl overflow-hidden"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: dropdownPosition.width,
+            }}
+          >
             <div className="px-3 py-2 border-b border-border/50">
               <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 {icon}
@@ -323,7 +351,7 @@ const AgentDropdown: React.FC<AgentDropdownProps> = ({
           isDisabled 
             ? 'cursor-not-allowed bg-muted text-muted-foreground' 
             : 'cursor-pointer hover:border-ring focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring',
-          isOpen && 'ring-2 ring-ring border-ring'
+          isOpen && 'ring-2 ring-ring border-ring relative z-[100]'
         )}
       >
         <span className={cn(
@@ -626,31 +654,36 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({
                 Server
               </label>
               <div className="relative">
-              <input
-                ref={serverInputRef}
-                id="serverUrl"
-                type="text"
-                value={serverUrl}
-                onChange={(e) => onServerUrlChange(e.target.value)}
-                onFocus={() => setShowServerDropdown(true)}
-                onPaste={() => {
-                  // Allow paste to work normally, then show dropdown
-                  setTimeout(() => setShowServerDropdown(true), 0);
-                }}
-                className="w-full px-4 pr-10 py-3 bg-background border border-input rounded-md text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all duration-200 text-sm"
-                placeholder="Enter server URL or select..."
-              />
-              <button
-                type="button"
-                onClick={() => setShowServerDropdown(!showServerDropdown)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Toggle server list"
-              >
-                <ChevronDown
-                  size={20}
-                  className={`transition-transform duration-200 ${showServerDropdown ? 'rotate-180' : ''}`}
+              <div className={cn(
+                "relative bg-background rounded-md",
+                showServerDropdown && "z-[100]"
+              )}>
+                <input
+                  ref={serverInputRef}
+                  id="serverUrl"
+                  type="text"
+                  value={serverUrl}
+                  onChange={(e) => onServerUrlChange(e.target.value)}
+                  onFocus={() => setShowServerDropdown(true)}
+                  onPaste={() => {
+                    // Allow paste to work normally, then show dropdown
+                    setTimeout(() => setShowServerDropdown(true), 0);
+                  }}
+                  className="w-full px-4 pr-10 py-3 bg-background border border-input rounded-md text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all duration-200 text-sm"
+                  placeholder="Enter server URL or select..."
                 />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setShowServerDropdown(!showServerDropdown)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Toggle server list"
+                >
+                  <ChevronDown
+                    size={20}
+                    className={`transition-transform duration-200 ${showServerDropdown ? 'rotate-180' : ''}`}
+                  />
+                </button>
+              </div>
               {showServerDropdown && (
                 <>
                   {/* Backdrop with blur */}
